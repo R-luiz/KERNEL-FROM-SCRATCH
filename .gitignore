@@ -53,3 +53,44 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+
+*.pdf
+
+# **************************************************************************** #
+#                                                                              #
+#   KFS_1 - Kernel From Scratch                                                #
+#                                                                              #
+#   .gitignore                                                                 #
+#                                                                              #
+# **************************************************************************** #
+
+# Build directory
+build/
+
+# ISO file
+*.iso
+
+# Copied kernel in iso directory
+iso/boot/kernel.bin
+
+# Object files
+*.o
+
+# Binary files
+*.bin
+*.elf
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Debug files
+*.dSYM/
+
+# OS files
+.DS_Store
+Thumbs.db
