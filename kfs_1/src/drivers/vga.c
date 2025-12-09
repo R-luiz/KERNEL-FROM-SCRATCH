@@ -186,7 +186,7 @@ void vga_putchar(char c)
     }
     else if (c == '\t')
     {
-        g_terminal.cursor_col = (g_terminal.cursor_col + 4) & ~3;
+        g_terminal.cursor_col = (g_terminal.cursor_col + 4U) & ~3U;
     }
     else if (c == '\b')
     {
