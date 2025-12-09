@@ -137,7 +137,7 @@ $(ISO): $(BUILD_DIR)/$(NAME)
 	@echo "  ISO     $@"
 	@mkdir -p $(ISO_DIR)/boot/grub
 	@cp $(BUILD_DIR)/$(NAME) $(ISO_DIR)/boot/
-	@grub-mkrescue -o $@ $(ISO_DIR) 2>/dev/null
+	@grub-mkrescue -o $@ $(ISO_DIR)
 	@echo "  SIZE    $@"
 	@du -h $@
 
