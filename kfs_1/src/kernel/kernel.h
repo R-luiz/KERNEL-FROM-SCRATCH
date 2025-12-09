@@ -56,4 +56,13 @@ void NORETURN kernel_panic(const char *file, int line, const char *msg);
 
 void printk(const char *format, ...);
 
+/*
+** ==========================================================================
+** Kernel Entry Point
+** ==========================================================================
+** Called by boot.asm after Multiboot initialization
+*/
+
+void kernel_main(void);
+
 #endif /* KERNEL_H */

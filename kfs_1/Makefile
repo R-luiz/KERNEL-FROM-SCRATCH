@@ -42,7 +42,6 @@ KERNEL_FLAGS    := -m32 \
                    -fno-builtin \
                    -fno-exceptions \
                    -fno-stack-protector \
-                   -fno-rtti \
                    -nostdlib \
                    -nodefaultlibs \
                    -fno-pic \
