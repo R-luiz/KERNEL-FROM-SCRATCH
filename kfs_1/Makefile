@@ -138,9 +138,9 @@ $(ISO): $(BUILD_DIR)/$(NAME)
 	@mkdir -p $(ISO_DIR)/boot/grub
 	@cp $(BUILD_DIR)/$(NAME) $(ISO_DIR)/boot/
 	@if command -v grub-mkrescue >/dev/null 2>&1; then \
-		grub-mkrescue -o $@ $(ISO_DIR) 2>&1 | grep -v "^xorriso" || true; \
+		grub-mkrescue --modules="multiboot normal" -o $@ $(ISO_DIR) 2>&1 | grep -v "^xorriso" || true; \
 		if [ ! -f $@ ]; then \
-			echo "  WARN    grub-mkrescue failed (mtools missing?). Install mtools or use 'make run' instead."; \
+			echo "  WARN    grub-mkrescue failed. Ensure grub-pc-bin and mtools are installed."; \
 			exit 1; \
 		fi; \
 	else \
