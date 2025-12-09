@@ -137,7 +137,16 @@ $(ISO): $(BUILD_DIR)/$(NAME)
 	@echo "  ISO     $@"
 	@mkdir -p $(ISO_DIR)/boot/grub
 	@cp $(BUILD_DIR)/$(NAME) $(ISO_DIR)/boot/
-	@grub-mkrescue -o $@ $(ISO_DIR)
+	@if command -v grub-mkrescue >/dev/null 2>&1; then \
+		grub-mkrescue -o $@ $(ISO_DIR) 2>&1 | grep -v "^xorriso" || true; \
+		if [ ! -f $@ ]; then \
+			echo "  WARN    grub-mkrescue failed (mtools missing?). Install mtools or use 'make run' instead."; \
+			exit 1; \
+		fi; \
+	else \
+		echo "  ERROR   grub-mkrescue not found. Install grub-pc-bin or use 'make run' instead."; \
+		exit 1; \
+	fi
 	@echo "  SIZE    $@"
 	@du -h $@
 
