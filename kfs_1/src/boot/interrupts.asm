@@ -131,8 +131,7 @@ isr_common_stub:
 
     popa                ; Restore registers
     add esp, 8          ; Clean up error code and ISR number
-    sti                 ; Re-enable interrupts
-    iret                ; Return from interrupt
+    iret                ; Return from interrupt (restores EFLAGS with IF)
 
 ; =============================================================================
 ; Common IRQ Handler
@@ -160,5 +159,4 @@ irq_common_stub:
 
     popa                ; Restore registers
     add esp, 8          ; Clean up error code and IRQ number
-    sti                 ; Re-enable interrupts
-    iret                ; Return from interrupt
+    iret                ; Return from interrupt (restores EFLAGS with IF)
