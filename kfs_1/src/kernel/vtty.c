@@ -225,12 +225,14 @@ void vtty_putchar(char c)
             term->cursor_col--;
             index = vga_index(term->cursor_col, term->cursor_row);
             term->buffer[index] = vga_entry(' ', term->color);
+            g_vga_buffer[index] = term->buffer[index];
         }
     }
     else
     {
         index = vga_index(term->cursor_col, term->cursor_row);
         term->buffer[index] = vga_entry(c, term->color);
+        g_vga_buffer[index] = term->buffer[index];
         term->cursor_col++;
     }
 
@@ -244,9 +246,12 @@ void vtty_putchar(char c)
     {
         vtty_scroll();
         term->cursor_row = VGA_HEIGHT - 1;
+        vtty_restore(g_current_terminal);
     }
-
-    vtty_restore(g_current_terminal);
+    else
+    {
+        vga_set_cursor(term->cursor_col, term->cursor_row);
+    }
 }
 
 /*
