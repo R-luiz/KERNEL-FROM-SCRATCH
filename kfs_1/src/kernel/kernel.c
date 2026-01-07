@@ -184,18 +184,18 @@ void printk(const char *format, ...)
 
 static void display_42_banner(void)
 {
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    vga_putstr("\n");
-    vga_putstr("        ##   #####  \n");
-    vga_putstr("        ##  ##   ## \n");
-    vga_putstr("        ## ##     ##\n");
-    vga_putstr("   ##   ##       ## \n");
-    vga_putstr("   ##   ##      ##  \n");
-    vga_putstr("   ##   ##     ##   \n");
-    vga_putstr("   #######    ##    \n");
-    vga_putstr("        ##   ##     \n");
-    vga_putstr("        ##  ####### \n");
-    vga_putstr("\n");
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
+    vtty_putstr("\n");
+    vtty_putstr("        ##   #####  \n");
+    vtty_putstr("        ##  ##   ## \n");
+    vtty_putstr("        ## ##     ##\n");
+    vtty_putstr("   ##   ##       ## \n");
+    vtty_putstr("   ##   ##      ##  \n");
+    vtty_putstr("   ##   ##     ##   \n");
+    vtty_putstr("   #######    ##    \n");
+    vtty_putstr("        ##   ##     \n");
+    vtty_putstr("        ##  ####### \n");
+    vtty_putstr("\n");
 }
 
 /*
@@ -234,18 +234,7 @@ void kernel_main(void)
     vtty_putstr("===========================================\n");
 
     /* Display mandatory "42" */
-    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    vtty_putstr("\n");
-    vtty_putstr("        ##   #####  \n");
-    vtty_putstr("        ##  ##   ## \n");
-    vtty_putstr("        ## ##     ##\n");
-    vtty_putstr("   ##   ##       ## \n");
-    vtty_putstr("   ##   ##      ##  \n");
-    vtty_putstr("   ##   ##     ##   \n");
-    vtty_putstr("   #######    ##    \n");
-    vtty_putstr("        ##   ##     \n");
-    vtty_putstr("        ##  ####### \n");
-    vtty_putstr("\n");
+    display_42_banner();
 
     /* Continue with terminal output */
     vtty_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
