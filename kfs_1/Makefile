@@ -87,11 +87,17 @@ LDFLAGS         := -m elf_i386 -T linker.ld -nostdlib
 # =============================================================================
 
 # Assembly sources
-ASM_SRCS        := $(SRC_DIR)/boot/boot.asm
+ASM_SRCS        := $(SRC_DIR)/boot/boot.asm \
+                   $(SRC_DIR)/boot/interrupts.asm
 
 # C sources
 C_SRCS          := $(SRC_DIR)/kernel/kernel.c \
+                   $(SRC_DIR)/kernel/idt.c \
+                   $(SRC_DIR)/kernel/pic.c \
+                   $(SRC_DIR)/kernel/isr.c \
+                   $(SRC_DIR)/kernel/vtty.c \
                    $(SRC_DIR)/drivers/vga.c \
+                   $(SRC_DIR)/drivers/keyboard.c \
                    $(SRC_DIR)/lib/string.c
 
 # Object files

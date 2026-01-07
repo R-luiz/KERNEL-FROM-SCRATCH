@@ -13,6 +13,10 @@
 /* ************************************************************************** */
 
 #include "kernel.h"
+#include "../include/idt.h"
+#include "../include/pic.h"
+#include "../include/keyboard.h"
+#include "../include/vtty.h"
 
 /*
 ** ==========================================================================
@@ -231,11 +235,41 @@ void kernel_main(void)
     printk("printk test: string=%s, char=%c, int=%d\n", "hello", 'X', -42);
     printk("printk test: uint=%u, hex=%x, ptr=%p\n", 12345, 0xDEAD, (void *)0xB8000);
 
-    /* Final message */
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
-    vga_putstr("\nSystem ready. Halting CPU.\n");
+    /* Initialize interrupt subsystem (Bonus) */
+    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
+    vga_putstr("\nInitializing interrupt subsystem...\n");
+    pic_init();
+    idt_init();
+    vga_putstr("[OK] PIC and IDT initialized\n");
 
-    /* Halt - kernel should never return */
+    /* Initialize keyboard driver (Bonus) */
+    keyboard_init();
+    vga_putstr("[OK] Keyboard driver initialized\n");
+
+    /* Initialize virtual terminals (Bonus) */
+    vtty_init();
+    vga_putstr("[OK] Virtual terminals initialized (4 TTYs)\n");
+
+    /* Enable interrupts */
+    __asm__ volatile ("sti");
+    vga_putstr("[OK] Interrupts enabled\n\n");
+
+    /* Display usage instructions */
+    vga_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+    vga_putstr("Bonus features enabled:\n");
+    vga_putstr("  - Keyboard input with echo\n");
+    vga_putstr("  - Virtual terminals (Alt+F1/F2/F3/F4 to switch)\n");
+    vga_putstr("  - Scroll and cursor support\n");
+    vga_putstr("  - Color support\n\n");
+
+    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
+    vga_putstr("System ready. Type to see keyboard input!\n");
+    vga_putstr("Press Alt+F1 through Alt+F4 to switch terminals.\n\n");
+
+    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
+
+    /* Switch to virtual terminal system */
+    /* Terminal 0 is active - keyboard input will be echoed */
     while (1)
     {
         __asm__ volatile ("hlt");
