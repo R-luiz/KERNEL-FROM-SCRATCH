@@ -33,11 +33,7 @@ static t_idt_ptr    g_idtp;
 
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
 {
-    if (num >= IDT_ENTRIES)
-    {
-        return;
-    }
-
+    /* num is uint8_t (0-255), IDT has 256 entries, so always valid */
     g_idt[num].offset_low = (uint16_t)(base & 0xFFFF);
     g_idt[num].offset_high = (uint16_t)((base >> 16) & 0xFFFF);
     g_idt[num].selector = sel;
