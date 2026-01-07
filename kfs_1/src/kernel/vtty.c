@@ -246,10 +246,12 @@ void vtty_putchar(char c)
     {
         vtty_scroll();
         term->cursor_row = VGA_HEIGHT - 1;
+        /* vtty_restore updates entire buffer and cursor */
         vtty_restore(g_current_terminal);
     }
     else
     {
+        /* Update cursor position for normal operations */
         vga_set_cursor(term->cursor_col, term->cursor_row);
     }
 }
