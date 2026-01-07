@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "kernel.h"
+#include "../include/idt.h"
 #include "../include/keyboard.h"
 #include "../include/vtty.h"
 

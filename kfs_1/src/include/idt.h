@@ -143,4 +143,8 @@ extern void irq_stub_13(void);
 extern void irq_stub_14(void);
 extern void irq_stub_15(void);
 
+/* C interrupt handlers (called from assembly) */
+void    isr_handler(void);
+void    irq_handler(void);
+
 #endif /* IDT_H */
