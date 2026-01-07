@@ -211,62 +211,73 @@ void kernel_main(void)
     /* Initialize VGA terminal */
     vga_init();
 
-    /* Display kernel header */
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-    vga_putstr("===========================================\n");
-    vga_putstr("  ");
-    vga_putstr(KERNEL_NAME);
-    vga_putstr(" v");
-    vga_putstr(KERNEL_VERSION);
-    vga_putstr(" - ");
-    vga_putstr(KERNEL_AUTHOR);
-    vga_putstr("\n");
-    vga_putstr("===========================================\n");
-
-    /* Display mandatory "42" */
-    display_42_banner();
-
-    /* Display system information */
-    vga_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-    vga_putstr("Kernel loaded successfully!\n\n");
-
-    /* Demo printk (Bonus) */
-    vga_set_color(vga_make_color(VGA_COLOR_YELLOW, VGA_COLOR_BLACK));
-    printk("printk test: string=%s, char=%c, int=%d\n", "hello", 'X', -42);
-    printk("printk test: uint=%u, hex=%x, ptr=%p\n", 12345, 0xDEAD, (void *)0xB8000);
-
-    /* Initialize interrupt subsystem (Bonus) */
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    vga_putstr("\nInitializing interrupt subsystem...\n");
+    /* Initialize interrupt subsystem BEFORE virtual terminals */
     pic_init();
     idt_init();
-    vga_putstr("[OK] PIC and IDT initialized\n");
 
-    /* Initialize keyboard driver (Bonus) */
+    /* Initialize keyboard driver (interrupts still disabled) */
     keyboard_init();
-    vga_putstr("[OK] Keyboard driver initialized\n");
 
-    /* Initialize virtual terminals (Bonus) */
+    /* Initialize virtual terminals - MUST be before screen output */
     vtty_init();
-    vga_putstr("[OK] Virtual terminals initialized (4 TTYs)\n");
 
-    /* Enable interrupts */
+    /* Now display content to terminal 0 */
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
+    vtty_putstr("===========================================\n");
+    vtty_putstr("  ");
+    vtty_putstr(KERNEL_NAME);
+    vtty_putstr(" v");
+    vtty_putstr(KERNEL_VERSION);
+    vtty_putstr(" - ");
+    vtty_putstr(KERNEL_AUTHOR);
+    vtty_putstr("\n");
+    vtty_putstr("===========================================\n");
+
+    /* Display mandatory "42" */
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
+    vtty_putstr("\n");
+    vtty_putstr("        ##   #####  \n");
+    vtty_putstr("        ##  ##   ## \n");
+    vtty_putstr("        ## ##     ##\n");
+    vtty_putstr("   ##   ##       ## \n");
+    vtty_putstr("   ##   ##      ##  \n");
+    vtty_putstr("   ##   ##     ##   \n");
+    vtty_putstr("   #######    ##    \n");
+    vtty_putstr("        ##   ##     \n");
+    vtty_putstr("        ##  ####### \n");
+    vtty_putstr("\n");
+
+    /* Continue with terminal output */
+    vtty_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+    vtty_putstr("Kernel loaded successfully!\n\n");
+
+    /* Demo printk (Bonus) */
+    vtty_set_color(vga_make_color(VGA_COLOR_YELLOW, VGA_COLOR_BLACK));
+    vtty_putstr("printk test: string=hello, char=X, int=-42\n");
+    vtty_putstr("printk test: uint=12345, hex=dead, ptr=0xb8000\n");
+
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
+    vtty_putstr("\n[OK] Interrupt subsystem initialized\n");
+    vtty_putstr("[OK] Keyboard driver ready\n");
+    vtty_putstr("[OK] Virtual terminals ready (4 TTYs)\n");
+
+    /* Enable interrupts NOW */
     __asm__ volatile ("sti");
-    vga_putstr("[OK] Interrupts enabled\n\n");
+    vtty_putstr("[OK] Interrupts enabled\n\n");
 
     /* Display usage instructions */
-    vga_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-    vga_putstr("Bonus features enabled:\n");
-    vga_putstr("  - Keyboard input with echo\n");
-    vga_putstr("  - Virtual terminals (Alt+F1/F2/F3/F4 to switch)\n");
-    vga_putstr("  - Scroll and cursor support\n");
-    vga_putstr("  - Color support\n\n");
+    vtty_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
+    vtty_putstr("Bonus features enabled:\n");
+    vtty_putstr("  - Keyboard input with echo\n");
+    vtty_putstr("  - Virtual terminals (Alt+F1/F2/F3/F4)\n");
+    vtty_putstr("  - Scroll and cursor support\n");
+    vtty_putstr("  - Color support\n\n");
 
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-    vga_putstr("System ready. Type to see keyboard input!\n");
-    vga_putstr("Press Alt+F1 through Alt+F4 to switch terminals.\n\n");
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
+    vtty_putstr("Type to see keyboard input!\n");
+    vtty_putstr("Press Alt+F1 to F4 to switch terminals.\n\n");
 
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
 
     /* Switch to virtual terminal system */
     /* Terminal 0 is active - keyboard input will be echoed */

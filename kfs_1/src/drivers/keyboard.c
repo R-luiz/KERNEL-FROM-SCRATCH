@@ -74,6 +74,8 @@ static t_key_event      g_key_buffer[KEYBOARD_BUFFER_SIZE];
 static size_t           g_buffer_read;
 static size_t           g_buffer_write;
 static size_t           g_buffer_count;
+static uint8_t          g_last_scancode;
+static uint32_t         g_debounce_counter;
 
 /*
 ** ==========================================================================
@@ -93,6 +95,8 @@ void keyboard_init(void)
     g_buffer_read = 0;
     g_buffer_write = 0;
     g_buffer_count = 0;
+    g_last_scancode = 0;
+    g_debounce_counter = 0;
 
     i = 0;
     while (i < KEYBOARD_BUFFER_SIZE)
@@ -192,6 +196,7 @@ void keyboard_handler(void)
     uint8_t         scancode;
     bool_t          pressed;
     t_key_event     event;
+    bool_t          is_duplicate;
 
     scancode = inb(KEYBOARD_DATA_PORT);
     pressed = (bool_t)((scancode & KEY_RELEASED_OFFSET) == 0);
@@ -199,9 +204,22 @@ void keyboard_handler(void)
     if (!pressed)
     {
         scancode = (uint8_t)(scancode & ~KEY_RELEASED_OFFSET);
+        g_last_scancode = 0;  /* Reset on key release */
+        g_debounce_counter = 0;
     }
 
     update_keyboard_state(scancode, pressed);
+
+    /* Simple debouncing: ignore duplicate key press within threshold */
+    is_duplicate = (bool_t)(pressed && scancode == g_last_scancode &&
+                            g_debounce_counter < 5);
+
+    if (is_duplicate)
+    {
+        g_debounce_counter++;
+        pic_send_eoi(1);
+        return;
+    }
 
     event.scancode = scancode;
     event.ascii = scancode_to_ascii(scancode);
@@ -210,6 +228,8 @@ void keyboard_handler(void)
     if (pressed)
     {
         buffer_add_key(event);
+        g_last_scancode = scancode;
+        g_debounce_counter = 0;
     }
 
     pic_send_eoi(1);
