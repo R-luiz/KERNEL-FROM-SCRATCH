@@ -13,10 +13,11 @@ A minimal 32-bit x86 operating system kernel written in C and Assembly, designed
 
 ### Bonus Features
 - **PS/2 Keyboard Driver**: Full keyboard input with modifier key support (Shift, Ctrl, Alt, Caps Lock)
+- **PS/2 Mouse Driver**: Scroll wheel support for navigating scrollback buffer
 - **Virtual Terminals**: 4 independent TTYs switchable with Alt+F1 through Alt+F4
+- **Scrollback Buffer**: 200 lines of history per terminal, navigable with mouse scroll
 - **printk()**: Printf-like formatted output for kernel debugging
 - **Hardware Cursor**: Blinking cursor with proper positioning
-- **Scrolling**: Automatic screen scrolling when buffer is full
 
 ## Project Structure
 
@@ -41,7 +42,8 @@ kfs_1/
     ├── drivers/
     │   ├── vga.c           # VGA text mode driver
     │   ├── vga.h           # VGA interface
-    │   └── keyboard.c      # PS/2 keyboard driver
+    │   ├── keyboard.c      # PS/2 keyboard driver
+    │   └── mouse.c         # PS/2 mouse driver
     ├── lib/
     │   ├── string.c        # Memory/string utilities (k_memset, k_strlen, etc.)
     │   └── string.h        # String library interface
@@ -50,6 +52,7 @@ kfs_1/
         ├── idt.h           # IDT structures and prototypes
         ├── pic.h           # PIC constants and prototypes
         ├── keyboard.h      # Keyboard interface
+        ├── mouse.h         # Mouse interface
         └── vtty.h          # Virtual terminal interface
 ```
 
@@ -127,11 +130,18 @@ Once booted, you'll see the kernel banner and a "42" ASCII art display.
 | Alt+F3 | Switch to Terminal 3 |
 | Alt+F4 | Switch to Terminal 4 |
 
+### Mouse Controls
+| Action | Effect |
+|--------|--------|
+| Scroll Up | View older content (scroll back in history) |
+| Scroll Down | View newer content (scroll forward) |
+
 ### Virtual Terminals
 The kernel provides 4 independent virtual terminals, each with:
-- Separate screen buffer (80x25 characters)
+- Separate scrollback buffer (200 lines)
 - Independent cursor position
 - Individual color settings
+- Mouse scroll navigation through history
 
 ## Technical Details
 

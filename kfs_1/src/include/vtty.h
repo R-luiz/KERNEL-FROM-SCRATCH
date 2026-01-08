@@ -20,8 +20,10 @@
 ** ==========================================================================
 */
 
-#define VTTY_COUNT          4
-#define VTTY_BUFFER_SIZE    (VGA_WIDTH * VGA_HEIGHT)
+#define VTTY_COUNT              4
+#define VTTY_SCROLLBACK_LINES   200     /* Total lines in scrollback buffer */
+#define VTTY_BUFFER_SIZE        (VGA_WIDTH * VTTY_SCROLLBACK_LINES)
+#define VTTY_VISIBLE_SIZE       (VGA_WIDTH * VGA_HEIGHT)
 
 /*
 ** ==========================================================================
@@ -31,9 +33,11 @@
 
 typedef struct s_vtty
 {
-    uint16_t    buffer[VTTY_BUFFER_SIZE];   /* Screen buffer */
-    size_t      cursor_row;                  /* Cursor row */
+    uint16_t    buffer[VTTY_BUFFER_SIZE];   /* Scrollback buffer */
+    size_t      cursor_row;                  /* Cursor row in buffer */
     size_t      cursor_col;                  /* Cursor column */
+    size_t      scroll_offset;               /* Lines scrolled back (0 = bottom) */
+    size_t      total_lines;                 /* Total lines written */
     uint8_t     color;                       /* Current color */
 }   t_vtty;
 
@@ -50,5 +54,7 @@ void    vtty_putchar(char c);
 void    vtty_putstr(const char *str);
 void    vtty_set_color(uint8_t color);
 void    vtty_clear(void);
+void    vtty_scroll_up(size_t lines);
+void    vtty_scroll_down(size_t lines);
 
 #endif /* VTTY_H */

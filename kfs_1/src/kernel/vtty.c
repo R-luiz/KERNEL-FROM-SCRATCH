@@ -2,7 +2,7 @@
 /*                                                                            */
 /*   KFS_1 - Kernel From Scratch                                              */
 /*                                                                            */
-/*   vtty.c - Virtual Terminal (TTY) Implementation                           */
+/*   vtty.c - Virtual Terminal (TTY) Implementation with Scrollback           */
 /*                                                                            */
 /*   NASA/JPL C Coding Standards Compliant:                                   */
 /*   - No recursion                                                           */
@@ -41,58 +41,78 @@ static inline uint16_t vga_entry(char c, uint8_t color)
 ** ==========================================================================
 */
 
-static inline size_t vga_index(size_t x, size_t y)
+static inline size_t buffer_index(size_t x, size_t y)
 {
     return (y * VGA_WIDTH + x);
 }
 
 /*
 ** ==========================================================================
-** Save Current Terminal to Buffer
+** Refresh Display from Scrollback Buffer
 ** ==========================================================================
 */
 
-static void vtty_save_current(void)
+static void vtty_refresh_display(void)
 {
-    size_t  i;
     t_vtty  *term;
+    size_t  display_start;
+    size_t  src_idx;
+    size_t  dst_idx;
+    size_t  i;
 
     term = &g_terminals[g_current_terminal];
 
-    i = 0;
-    while (i < VTTY_BUFFER_SIZE)
+    /* Calculate the starting line in the buffer to display */
+    if (term->cursor_row < VGA_HEIGHT)
     {
-        term->buffer[i] = g_vga_buffer[i];
+        display_start = 0;
+    }
+    else
+    {
+        display_start = term->cursor_row - VGA_HEIGHT + 1;
+    }
+
+    /* Apply scroll offset (scrolling up means showing earlier lines) */
+    if (display_start >= term->scroll_offset)
+    {
+        display_start = display_start - term->scroll_offset;
+    }
+    else
+    {
+        display_start = 0;
+    }
+
+    /* Copy visible portion to VGA buffer */
+    dst_idx = 0;
+    i = 0;
+    while (i < VGA_HEIGHT)
+    {
+        src_idx = buffer_index(0, display_start + i);
+        k_memcpy((void *)&g_vga_buffer[dst_idx], &term->buffer[src_idx],
+                 VGA_WIDTH * sizeof(uint16_t));
+        dst_idx += VGA_WIDTH;
         i++;
     }
-}
 
-/*
-** ==========================================================================
-** Restore Terminal from Buffer
-** ==========================================================================
-*/
-
-static void vtty_restore(uint8_t terminal)
-{
-    size_t  i;
-    t_vtty  *term;
-
-    if (terminal >= VTTY_COUNT)
+    /* Update cursor position (only if not scrolled back) */
+    if (term->scroll_offset == 0)
     {
-        return;
+        size_t visible_row;
+        if (term->cursor_row >= display_start)
+        {
+            visible_row = term->cursor_row - display_start;
+        }
+        else
+        {
+            visible_row = 0;
+        }
+        vga_set_cursor(term->cursor_col, visible_row);
     }
-
-    term = &g_terminals[terminal];
-
-    i = 0;
-    while (i < VTTY_BUFFER_SIZE)
+    else
     {
-        g_vga_buffer[i] = term->buffer[i];
-        i++;
+        /* Hide cursor when scrolled back */
+        vga_set_cursor(VGA_WIDTH, VGA_HEIGHT);
     }
-
-    vga_set_cursor(term->cursor_col, term->cursor_row);
 }
 
 /*
@@ -116,6 +136,8 @@ void vtty_init(void)
     {
         g_terminals[i].cursor_row = 0;
         g_terminals[i].cursor_col = 0;
+        g_terminals[i].scroll_offset = 0;
+        g_terminals[i].total_lines = 0;
         g_terminals[i].color = vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK);
 
         j = 0;
@@ -128,7 +150,7 @@ void vtty_init(void)
         i++;
     }
 
-    vtty_restore(0);
+    vtty_refresh_display();
 }
 
 /*
@@ -144,9 +166,8 @@ void vtty_switch(uint8_t terminal)
         return;
     }
 
-    vtty_save_current();
     g_current_terminal = terminal;
-    vtty_restore(terminal);
+    vtty_refresh_display();
 }
 
 /*
@@ -162,11 +183,11 @@ uint8_t vtty_get_current(void)
 
 /*
 ** ==========================================================================
-** Scroll Terminal
+** Scroll Buffer Content Up (new line at bottom)
 ** ==========================================================================
 */
 
-static void vtty_scroll(void)
+static void vtty_scroll_content(void)
 {
     size_t      i;
     uint16_t    blank;
@@ -174,22 +195,34 @@ static void vtty_scroll(void)
     t_vtty      *term;
 
     term = &g_terminals[g_current_terminal];
+
+    /* If we haven't filled the buffer yet, just increment cursor_row */
+    if (term->cursor_row < VTTY_SCROLLBACK_LINES - 1)
+    {
+        return;
+    }
+
+    /* Shift all lines up by one */
     blank = vga_entry(' ', term->color);
 
     i = 0;
-    while (i < (VGA_HEIGHT - 1) * VGA_WIDTH)
+    while (i < (VTTY_SCROLLBACK_LINES - 1) * VGA_WIDTH)
     {
         term->buffer[i] = term->buffer[i + VGA_WIDTH];
         i++;
     }
 
-    last_row_start = (VGA_HEIGHT - 1) * VGA_WIDTH;
+    /* Clear the last line */
+    last_row_start = (VTTY_SCROLLBACK_LINES - 1) * VGA_WIDTH;
     i = 0;
     while (i < VGA_WIDTH)
     {
         term->buffer[last_row_start + i] = blank;
         i++;
     }
+
+    /* Keep cursor at the last line */
+    term->cursor_row = VTTY_SCROLLBACK_LINES - 1;
 }
 
 /*
@@ -205,10 +238,17 @@ void vtty_putchar(char c)
 
     term = &g_terminals[g_current_terminal];
 
+    /* Reset scroll offset when typing */
+    term->scroll_offset = 0;
+
     if (c == '\n')
     {
         term->cursor_col = 0;
         term->cursor_row++;
+        if (term->cursor_row > term->total_lines)
+        {
+            term->total_lines = term->cursor_row;
+        }
     }
     else if (c == '\r')
     {
@@ -223,16 +263,14 @@ void vtty_putchar(char c)
         if (term->cursor_col > 0)
         {
             term->cursor_col--;
-            index = vga_index(term->cursor_col, term->cursor_row);
+            index = buffer_index(term->cursor_col, term->cursor_row);
             term->buffer[index] = vga_entry(' ', term->color);
-            g_vga_buffer[index] = term->buffer[index];
         }
     }
     else
     {
-        index = vga_index(term->cursor_col, term->cursor_row);
+        index = buffer_index(term->cursor_col, term->cursor_row);
         term->buffer[index] = vga_entry(c, term->color);
-        g_vga_buffer[index] = term->buffer[index];
         term->cursor_col++;
     }
 
@@ -240,20 +278,18 @@ void vtty_putchar(char c)
     {
         term->cursor_col = 0;
         term->cursor_row++;
+        if (term->cursor_row > term->total_lines)
+        {
+            term->total_lines = term->cursor_row;
+        }
     }
 
-    if (term->cursor_row >= VGA_HEIGHT)
+    if (term->cursor_row >= VTTY_SCROLLBACK_LINES)
     {
-        vtty_scroll();
-        term->cursor_row = VGA_HEIGHT - 1;
-        /* vtty_restore updates entire buffer and cursor */
-        vtty_restore(g_current_terminal);
+        vtty_scroll_content();
     }
-    else
-    {
-        /* Update cursor position for normal operations */
-        vga_set_cursor(term->cursor_col, term->cursor_row);
-    }
+
+    vtty_refresh_display();
 }
 
 /*
@@ -314,6 +350,64 @@ void vtty_clear(void)
 
     term->cursor_row = 0;
     term->cursor_col = 0;
+    term->scroll_offset = 0;
+    term->total_lines = 0;
 
-    vtty_restore(g_current_terminal);
+    vtty_refresh_display();
+}
+
+/*
+** ==========================================================================
+** Scroll View Up (see older content)
+** ==========================================================================
+*/
+
+void vtty_scroll_up(size_t lines)
+{
+    t_vtty  *term;
+    size_t  max_offset;
+
+    term = &g_terminals[g_current_terminal];
+
+    /* Calculate maximum scroll offset */
+    if (term->cursor_row >= VGA_HEIGHT)
+    {
+        max_offset = term->cursor_row - VGA_HEIGHT + 1;
+    }
+    else
+    {
+        max_offset = 0;
+    }
+
+    term->scroll_offset += lines;
+    if (term->scroll_offset > max_offset)
+    {
+        term->scroll_offset = max_offset;
+    }
+
+    vtty_refresh_display();
+}
+
+/*
+** ==========================================================================
+** Scroll View Down (see newer content)
+** ==========================================================================
+*/
+
+void vtty_scroll_down(size_t lines)
+{
+    t_vtty  *term;
+
+    term = &g_terminals[g_current_terminal];
+
+    if (term->scroll_offset >= lines)
+    {
+        term->scroll_offset -= lines;
+    }
+    else
+    {
+        term->scroll_offset = 0;
+    }
+
+    vtty_refresh_display();
 }

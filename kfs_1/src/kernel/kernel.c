@@ -16,6 +16,7 @@
 #include "../include/idt.h"
 #include "../include/pic.h"
 #include "../include/keyboard.h"
+#include "../include/mouse.h"
 #include "../include/vtty.h"
 
 /*
@@ -218,6 +219,9 @@ void kernel_main(void)
     /* Initialize keyboard driver (interrupts still disabled) */
     keyboard_init();
 
+    /* Initialize mouse driver */
+    mouse_init();
+
     /* Initialize virtual terminals - MUST be before screen output */
     vtty_init();
 
@@ -240,14 +244,10 @@ void kernel_main(void)
     vtty_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
     vtty_putstr("Kernel loaded successfully!\n\n");
 
-    /* Demo printk (Bonus) */
-    vtty_set_color(vga_make_color(VGA_COLOR_YELLOW, VGA_COLOR_BLACK));
-    vtty_putstr("printk test: string=hello, char=X, int=-42\n");
-    vtty_putstr("printk test: uint=12345, hex=dead, ptr=0xb8000\n");
-
     vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    vtty_putstr("\n[OK] Interrupt subsystem initialized\n");
+    vtty_putstr("[OK] Interrupt subsystem initialized\n");
     vtty_putstr("[OK] Keyboard driver ready\n");
+    vtty_putstr("[OK] Mouse driver ready (scroll wheel enabled)\n");
     vtty_putstr("[OK] Virtual terminals ready (4 TTYs)\n");
 
     /* Enable interrupts NOW */
@@ -259,12 +259,12 @@ void kernel_main(void)
     vtty_putstr("Bonus features enabled:\n");
     vtty_putstr("  - Keyboard input with echo\n");
     vtty_putstr("  - Virtual terminals (Alt+F1/F2/F3/F4)\n");
-    vtty_putstr("  - Scroll and cursor support\n");
-    vtty_putstr("  - Color support\n\n");
+    vtty_putstr("  - Mouse scroll wheel (scroll up/down)\n");
+    vtty_putstr("  - 200 lines scrollback buffer\n\n");
 
     vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
     vtty_putstr("Type to see keyboard input!\n");
-    vtty_putstr("Press Alt+F1 to F4 to switch terminals.\n\n");
+    vtty_putstr("Use mouse scroll wheel to view history.\n\n");
 
     vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
 

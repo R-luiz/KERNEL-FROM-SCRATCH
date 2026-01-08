@@ -98,6 +98,7 @@ C_SRCS          := $(SRC_DIR)/kernel/kernel.c \
                    $(SRC_DIR)/kernel/vtty.c \
                    $(SRC_DIR)/drivers/vga.c \
                    $(SRC_DIR)/drivers/keyboard.c \
+                   $(SRC_DIR)/drivers/mouse.c \
                    $(SRC_DIR)/lib/string.c
 
 # Object files
