@@ -240,31 +240,8 @@ void kernel_main(void)
     /* Display mandatory "42" */
     display_42_banner();
 
-    /* Continue with terminal output */
-    vtty_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-    vtty_putstr("Kernel loaded successfully!\n\n");
-
-    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    vtty_putstr("[OK] Interrupt subsystem initialized\n");
-    vtty_putstr("[OK] Keyboard driver ready\n");
-    vtty_putstr("[OK] Mouse driver ready (scroll wheel enabled)\n");
-    vtty_putstr("[OK] Virtual terminals ready (4 TTYs)\n");
-
-    /* Enable interrupts NOW */
+    /* Enable interrupts */
     __asm__ volatile ("sti");
-    vtty_putstr("[OK] Interrupts enabled\n\n");
-
-    /* Display usage instructions */
-    vtty_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-    vtty_putstr("Bonus features enabled:\n");
-    vtty_putstr("  - Keyboard input with echo\n");
-    vtty_putstr("  - Virtual terminals (Alt+F1/F2/F3/F4)\n");
-    vtty_putstr("  - Mouse scroll wheel (scroll up/down)\n");
-    vtty_putstr("  - 200 lines scrollback buffer\n\n");
-
-    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-    vtty_putstr("Type to see keyboard input!\n");
-    vtty_putstr("Use mouse scroll wheel to view history.\n\n");
 
     vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
 
