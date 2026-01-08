@@ -116,7 +116,7 @@ isr_common_stub:
     mov ax, ds          ; Save data segment (16-bit)
     push eax            ; Push as 32-bit value
 
-    mov ax, 0x10        ; Load kernel data segment
+    mov ax, 0x18        ; Load kernel data segment (0x18, not 0x10!)
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -145,16 +145,16 @@ irq_common_stub:
     mov ax, ds          ; Save data segment (16-bit)
     push eax            ; Push as 32-bit value
 
-    mov ax, 0x10        ; Load kernel data segment
+    mov ax, 0x18        ; Load kernel data segment (0x18, not 0x10!)
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
     ; Push IRQ number as parameter to C handler
-    ; Stack layout: [ds] [pusha] [error_code] [irq_num] [eip] [cs] [eflags]
-    ; The IRQ number is at [esp + 40] (ds 4 bytes + 8 regs * 4 bytes + error 4 bytes = 40)
-    mov eax, [esp + 40]
+    ; Stack layout: [ds] [8_regs] [irq_num] [error_code] [eip] [cs] [eflags]
+    ; The IRQ number is at [esp + 36] (ds 4 bytes + 8 regs * 4 bytes = 36)
+    mov eax, [esp + 36]
     push eax
 
     call irq_handler    ; Call C handler

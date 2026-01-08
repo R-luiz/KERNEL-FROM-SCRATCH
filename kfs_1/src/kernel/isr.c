@@ -21,13 +21,15 @@
 ** ISR Handler - CPU Exceptions
 ** ==========================================================================
 ** Called from assembly stub when CPU exception occurs
+** DO NOT use KERNEL_PANIC here - it might cause another exception!
 */
 
 void isr_handler(void)
 {
-    /* For now, just halt on any CPU exception */
-    /* In future, could parse stack to get exception number and info */
-    KERNEL_PANIC("CPU Exception occurred");
+    /* Halt immediately without trying to print anything */
+    /* Printing could cause another exception -> double fault -> triple fault */
+    __asm__ volatile ("cli; hlt");
+    while (1) { __asm__ volatile ("hlt"); }
 }
 
 /*
