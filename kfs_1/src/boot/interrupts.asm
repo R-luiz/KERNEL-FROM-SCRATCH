@@ -112,8 +112,9 @@ IRQ_STUB 15         ; Secondary ATA
 isr_common_stub:
     pusha               ; Push all general purpose registers
 
-    mov ax, ds          ; Save data segment
-    push eax
+    xor eax, eax        ; Zero out eax
+    mov ax, ds          ; Save data segment (16-bit)
+    push eax            ; Push as 32-bit value
 
     mov ax, 0x10        ; Load kernel data segment
     mov ds, ax
@@ -140,8 +141,9 @@ isr_common_stub:
 irq_common_stub:
     pusha               ; Push all general purpose registers
 
-    mov ax, ds          ; Save data segment
-    push eax
+    xor eax, eax        ; Zero out eax
+    mov ax, ds          ; Save data segment (16-bit)
+    push eax            ; Push as 32-bit value
 
     mov ax, 0x10        ; Load kernel data segment
     mov ds, ax
