@@ -116,7 +116,7 @@ isr_common_stub:
     mov ax, ds          ; Save data segment (16-bit)
     push eax            ; Push as 32-bit value
 
-    mov ax, 0x18        ; Load kernel data segment (0x18, not 0x10!)
+    mov ax, 0x10        ; Load kernel data segment (our GDT: 0x10)
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -145,7 +145,7 @@ irq_common_stub:
     mov ax, ds          ; Save data segment (16-bit)
     push eax            ; Push as 32-bit value
 
-    mov ax, 0x18        ; Load kernel data segment (0x18, not 0x10!)
+    mov ax, 0x10        ; Load kernel data segment (our GDT: 0x10)
     mov ds, ax
     mov es, ax
     mov fs, ax
