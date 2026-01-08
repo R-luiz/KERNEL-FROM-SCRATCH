@@ -116,11 +116,11 @@ void idt_init(void)
     idt_set_gate(46, (uint32_t)irq_stub_14, 0x08, flags);
     idt_set_gate(47, (uint32_t)irq_stub_15, 0x08, flags);
 
-    /* Clear remaining entries (safety) */
+    /* Set default handler for remaining entries (48-255) */
     i = 48;
     while (i < IDT_ENTRIES)
     {
-        idt_set_gate((uint8_t)i, 0, 0, 0);
+        idt_set_gate((uint8_t)i, (uint32_t)default_int_stub, 0x08, flags);
         i++;
     }
 

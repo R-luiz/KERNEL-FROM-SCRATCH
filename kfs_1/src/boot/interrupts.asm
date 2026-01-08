@@ -170,3 +170,12 @@ irq_common_stub:
     popa                ; Restore registers
     add esp, 8          ; Clean up error code and IRQ number
     iret                ; Return from interrupt (restores EFLAGS with IF)
+
+; =============================================================================
+; Default/Spurious Interrupt Handler
+; =============================================================================
+; Handles any unregistered interrupts gracefully
+
+global default_int_stub
+default_int_stub:
+    iret                ; Just return immediately
