@@ -15,7 +15,8 @@
       "Bash(objdump:*)",
       "Bash(nm:*)",
       "Bash(ls:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(make:*)"
     ],
     "deny": [],
     "ask": []
