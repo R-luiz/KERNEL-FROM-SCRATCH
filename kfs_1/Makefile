@@ -73,14 +73,14 @@ INCLUDES        := -I$(SRC_DIR)/include \
                    -I$(SRC_DIR)/drivers \
                    -I$(SRC_DIR)/lib
 
-# Combined C flags
-CFLAGS          := $(KERNEL_FLAGS) $(NASA_FLAGS) $(INCLUDES) -std=c99 -O2 -g
+# Combined C flags (no debug symbols for smaller binary)
+CFLAGS          := $(KERNEL_FLAGS) $(NASA_FLAGS) $(INCLUDES) -std=c99 -Os
 
 # Assembler flags
-ASFLAGS         := -f elf32 -g
+ASFLAGS         := -f elf32
 
-# Linker flags
-LDFLAGS         := -m elf_i386 -T linker.ld -nostdlib
+# Linker flags (strip all symbols and sections)
+LDFLAGS         := -m elf_i386 -T linker.ld -nostdlib -s
 
 # =============================================================================
 # Source Files
@@ -145,7 +145,7 @@ $(ISO): $(BUILD_DIR)/$(NAME)
 	@mkdir -p $(ISO_DIR)/boot/grub
 	@cp $(BUILD_DIR)/$(NAME) $(ISO_DIR)/boot/
 	@if command -v grub-mkrescue >/dev/null 2>&1; then \
-		grub-mkrescue --modules="multiboot normal" -o $@ $(ISO_DIR) 2>&1 | grep -v "^xorriso" || true; \
+		grub-mkrescue --compress=xz --modules="multiboot" --install-modules="multiboot normal biosdisk part_msdos iso9660" -o $@ $(ISO_DIR) 2>&1 | grep -v "^xorriso" || true; \
 		if [ ! -f $@ ]; then \
 			echo "  WARN    grub-mkrescue failed. Ensure grub-pc-bin and mtools are installed."; \
 			exit 1; \

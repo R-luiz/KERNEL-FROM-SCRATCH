@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-KFS_1 (Kernel From Scratch) is a minimal 32-bit x86 kernel that boots via GRUB and displays output to VGA text mode. The kernel is written to comply with NASA/JPL C Coding Standards, emphasizing safety and reliability through strict compilation flags and coding practices.
+KFS_1 (Kernel From Scratch) is a minimal 32-bit x86 operating system kernel that boots via GRUB and runs on both real hardware and virtual machines. Features include PS/2 keyboard and mouse support, 4 virtual terminals with scrollback, and full interrupt handling. Written to comply with NASA/JPL C Coding Standards.
 
 ## Build Commands
 
@@ -59,9 +59,9 @@ make check-iso
 
 1. **boot.asm** (`src/boot/boot.asm`): Multiboot header and entry point
    - Contains the Multiboot header (must be in first 8KB)
+   - Sets up custom GDT with code (0x08) and data (0x10) selectors
    - Sets up 16KB stack
    - Calls `kernel_main()` from C code
-   - Passes Multiboot magic number and info structure to kernel
 
 2. **linker.ld**: Memory layout script
    - Loads kernel at 1MB (0x100000) physical address
@@ -69,69 +69,159 @@ make check-iso
    - Entry point: `_start` symbol from boot.asm
 
 3. **kernel.c** (`src/kernel/kernel.c`): Main kernel entry point
-   - Initializes VGA terminal
+   - Initializes VGA, PIC, IDT, keyboard, mouse, virtual terminals
    - Displays kernel banner and "42" (mandatory requirement)
-   - Demonstrates `printk()` formatting
-   - Halts CPU in infinite loop
+   - Enables interrupts and enters main loop
 
 ### Core Modules
 
 **VGA Driver** (`src/drivers/vga.c`, `vga.h`)
 - Text mode output at memory address 0xB8000
-- 80x25 character display
-- 16 foreground and 8 background colors
+- 80x25 character display, 16 colors
 - Hardware cursor control via I/O ports 0x3D4/0x3D5
-- Automatic scrolling when screen is full
 - Special character handling: `\n`, `\r`, `\t`, `\b`
 
+**Keyboard Driver** (`src/drivers/keyboard.c`, `include/keyboard.h`)
+- PS/2 keyboard handling via port 0x60
+- Full scancode-to-ASCII translation
+- Modifier keys: Shift, Ctrl, Alt, Caps Lock
+- Ring buffer for key event queue
+
+**Mouse Driver** (`src/drivers/mouse.c`, `include/mouse.h`)
+- PS/2 mouse with IntelliMouse scroll wheel detection
+- 3-byte (standard) or 4-byte (scroll wheel) packet handling
+- Ring buffer for mouse event queue
+- IRQ12 on slave PIC
+
+**Virtual Terminal System** (`src/kernel/vtty.c`, `include/vtty.h`)
+- 4 independent terminals (Alt+F1-F4 to switch)
+- 200-line scrollback buffer per terminal
+- Mouse scroll wheel navigation through history
+- Independent cursor, color, and content per terminal
+
+### Interrupt System
+
+**IDT** (`src/kernel/idt.c`, `include/idt.h`)
+- 256-entry Interrupt Descriptor Table
+- CPU exceptions (vectors 0-31)
+- Hardware IRQs (vectors 32-47)
+- Uses code selector 0x08 for all handlers
+
+**PIC** (`src/kernel/pic.c`, `include/pic.h`)
+- 8259 PIC initialization and remapping
+- IRQs 0-7 mapped to vectors 32-39 (master)
+- IRQs 8-15 mapped to vectors 40-47 (slave)
+- Cascade enabled on IRQ2 for mouse support
+
+**ISR** (`src/kernel/isr.c`)
+- CPU exception handler (halts on exception)
+- IRQ dispatcher for keyboard (IRQ1) and mouse (IRQ12)
+- Alt+F1-F4 terminal switching logic
+
+**Assembly Stubs** (`src/boot/interrupts.asm`)
+- ISR stubs for all 256 vectors
+- Save/restore CPU state
+- Call C handlers with proper stack frame
+
+### Support Libraries
+
 **String Library** (`src/lib/string.c`, `string.h`)
-- Memory functions: `k_memset()`, `k_memcpy()`, `k_memmove()`, `k_memcmp()`
-- String functions: `k_strlen()`, `k_strcmp()`, `k_strncmp()`, `k_strcpy()`, `k_strncpy()`
-- Number conversion: `k_itoa()` (signed), `k_utoa()` (unsigned)
-- All functions prefixed with `k_` to avoid conflicts with standard library
+- Memory: `k_memset()`, `k_memcpy()`, `k_memmove()`, `k_memcmp()`
+- String: `k_strlen()`, `k_strcmp()`, `k_strncmp()`, `k_strcpy()`, `k_strncpy()`
+- Number conversion: `k_itoa()`, `k_utoa()`
 
 **Types** (`src/include/types.h`)
-- Fixed-width types: `uint8_t`, `uint16_t`, `uint32_t`, `int32_t`, etc.
+- Fixed-width types: `uint8_t`, `uint16_t`, `uint32_t`, `int8_t`, etc.
 - Size types: `size_t`, `ssize_t`
-- Boolean type: `bool_t` with `TRUE`/`FALSE`
-- Compiler attributes: `PACKED`, `ALIGNED()`, `NORETURN`, `UNUSED`, `ALWAYS_INLINE`
-- Compile-time assertions via `STATIC_ASSERT()` macro
+- Boolean: `bool_t` with `TRUE`/`FALSE`
+- Attributes: `PACKED`, `ALIGNED()`, `NORETURN`, `UNUSED`
 
 ### Kernel Utilities
 
 **Printk** (in `kernel.c`)
-- Printf-like formatting for kernel debugging
-- Supported format specifiers: `%s`, `%c`, `%d`, `%i`, `%u`, `%x`, `%X`, `%p`, `%%`
-- Uses built-in variadic argument support (`__builtin_va_list`)
+- Printf-like formatting: `%s`, `%c`, `%d`, `%i`, `%u`, `%x`, `%X`, `%p`, `%%`
+- Uses `__builtin_va_list` for variadic arguments
 
 **Kernel Panic** (in `kernel.c`)
-- Error display with white-on-red color scheme
-- Shows file, line number, and error message
-- Halts CPU permanently
-- Use via `KERNEL_PANIC(msg)` macro or `KERNEL_ASSERT(condition, msg)`
+- White-on-red error display
+- Shows file, line, message
+- Use via `KERNEL_PANIC(msg)` or `KERNEL_ASSERT(cond, msg)`
 
-## NASA/JPL C Coding Standards Compliance
+## Directory Structure
 
-The codebase follows these strict rules:
+```
+kfs_1/
+├── Makefile                    # Build system (NASA-compliant flags)
+├── linker.ld                   # Memory layout (kernel at 1MB)
+├── iso/boot/grub/grub.cfg      # GRUB configuration
+└── src/
+    ├── boot/
+    │   ├── boot.asm            # Entry point, GDT, stack setup
+    │   └── interrupts.asm      # ISR/IRQ assembly stubs
+    ├── kernel/
+    │   ├── kernel.c            # Main entry, printk, panic
+    │   ├── kernel.h            # Kernel constants
+    │   ├── idt.c               # Interrupt Descriptor Table
+    │   ├── pic.c               # PIC initialization
+    │   ├── isr.c               # Interrupt handlers
+    │   └── vtty.c              # Virtual terminal system
+    ├── drivers/
+    │   ├── vga.c / vga.h       # VGA text mode driver
+    │   ├── keyboard.c          # PS/2 keyboard driver
+    │   └── mouse.c             # PS/2 mouse driver
+    ├── lib/
+    │   ├── string.c / string.h # Memory/string utilities
+    └── include/
+        ├── types.h             # Fixed-width types, attributes
+        ├── idt.h               # IDT structures
+        ├── pic.h               # PIC constants
+        ├── keyboard.h          # Keyboard interface
+        ├── mouse.h             # Mouse interface
+        └── vtty.h              # Terminal interface
+```
+
+## Technical Details
+
+### GDT (Custom in boot.asm)
+| Selector | Segment |
+|----------|---------|
+| 0x00 | Null |
+| 0x08 | Code (ring 0, 4GB) |
+| 0x10 | Data (ring 0, 4GB) |
+
+### IDT Vectors
+| Vector | Handler |
+|--------|---------|
+| 0-31 | CPU exceptions |
+| 32 | Timer (IRQ0) |
+| 33 | Keyboard (IRQ1) |
+| 44 | Mouse (IRQ12) |
+
+### Memory Map
+| Address | Content |
+|---------|---------|
+| 0x00000-0xFFFFF | Reserved (BIOS, VGA at 0xB8000) |
+| 0x100000+ | Kernel code and data |
+
+## NASA/JPL C Coding Standards
 
 1. **No recursion**: All functions use iteration
-2. **Bounded loops**: Every loop has a computable upper bound
+2. **Bounded loops**: Every loop has computable upper bound
 3. **Functions ≤ 60 lines**: Keep functions short and focused
 4. **Narrow scope**: Declare variables at narrowest possible scope
-5. **Assertions**: Use `KERNEL_ASSERT()` for runtime checks
-6. **Return value checking**: Most functions return void; pointer returns checked for NULL
+5. **All returns checked**: Pointer returns checked for NULL
+6. **No dynamic memory**: No malloc/free
 
 ### Compiler Flags
 
-Strict NASA-compliant warning flags are enabled:
-- `-Wall -Wextra -Werror -pedantic`: Basic strictness
-- `-Wshadow -Wpointer-arith -Wcast-align`: Prevent common bugs
-- `-Wmissing-prototypes -Wmissing-declarations`: Enforce declarations
-- `-Wconversion -Wundef`: Catch type and macro issues
-
-Freestanding kernel flags:
-- `-m32 -ffreestanding -nostdlib -nodefaultlibs`: 32-bit, no standard library
-- `-fno-builtin -fno-stack-protector -fno-pic -fno-pie`: Minimal dependencies
+```
+-Wall -Wextra -Werror -pedantic
+-Wshadow -Wpointer-arith -Wcast-align
+-Wmissing-prototypes -Wmissing-declarations
+-Wconversion -Wstrict-prototypes
+-m32 -ffreestanding -nostdlib
+-fno-builtin -fno-stack-protector -fno-pic
+```
 
 ## Development Constraints
 
@@ -139,57 +229,21 @@ Freestanding kernel flags:
 - **Freestanding environment**: Only compiler-provided features available
 - **32-bit x86**: Code targets i386 architecture
 - **No dynamic memory**: No malloc/free (not yet implemented)
-- **No floating point**: Kernel runs in protected mode without FPU setup
 - **ISO size limit**: Final ISO must be under 10MB
 
 ## Adding New Features
 
-When adding functionality:
-
-1. Follow NASA rules (no recursion, bounded loops, ≤60 lines per function)
-2. Use `k_*` prefix for library functions to avoid conflicts
-3. Include detailed comments explaining purpose and constraints
-4. Update relevant header files with prototypes
-5. Add new source files to `Makefile` in `C_SRCS` or `ASM_SRCS`
-6. Test with both `make run` and `make debug`
-
-## Directory Structure
-
-```
-kfs_1/
-├── Makefile              # Build system
-├── linker.ld            # Kernel linker script
-├── src/
-│   ├── boot/
-│   │   └── boot.asm     # Assembly entry point + Multiboot header
-│   ├── kernel/
-│   │   ├── kernel.c     # Main kernel logic
-│   │   └── kernel.h     # Kernel interface
-│   ├── drivers/
-│   │   ├── vga.c        # VGA text mode driver
-│   │   └── vga.h        # VGA interface
-│   ├── lib/
-│   │   ├── string.c     # String/memory utilities
-│   │   └── string.h     # String interface
-│   └── include/
-│       └── types.h      # Type definitions
-├── iso/
-│   └── boot/grub/
-│       └── grub.cfg     # GRUB bootloader config
-└── build/               # Generated files (object files, kernel.bin)
-```
+1. Follow NASA rules (no recursion, bounded loops, ≤60 lines)
+2. Use `k_*` prefix for library functions
+3. Include detailed comments
+4. Update relevant header files
+5. Add source files to `Makefile` in `C_SRCS` or `ASM_SRCS`
+6. Test with `make run` and `make run-iso`
 
 ## Toolchain Requirements
 
 - **gcc**: Cross-compiler or native with `-m32` support
 - **nasm**: Netwide Assembler for boot.asm
 - **ld**: GNU linker
-- **grub-mkrescue**: For creating bootable ISOs
+- **grub-mkrescue**: For creating bootable ISOs (requires `grub-pc-bin`, `xorriso`, `mtools`)
 - **qemu-system-i386**: For testing (optional: KVM for acceleration)
-- **gdb**: For debugging (optional)
-
-## Memory Map
-
-- `0x00000000 - 0x000FFFFF`: Reserved (BIOS, VGA memory at 0xB8000)
-- `0x00100000 - onwards`: Kernel code and data (1MB mark)
-- Stack: 16KB allocated in BSS section, grows downward
