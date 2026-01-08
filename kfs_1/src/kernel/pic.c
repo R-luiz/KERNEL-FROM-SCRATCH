@@ -47,13 +47,6 @@ static inline void io_wait(void)
 
 void pic_init(void)
 {
-    uint8_t mask1;
-    uint8_t mask2;
-
-    /* Save masks */
-    mask1 = inb(PIC1_DATA);
-    mask2 = inb(PIC2_DATA);
-
     /* Start initialization sequence (ICW1) */
     outb(PIC1_COMMAND, (uint8_t)(ICW1_INIT | ICW1_ICW4));
     io_wait();
@@ -78,9 +71,9 @@ void pic_init(void)
     outb(PIC2_DATA, ICW4_8086);
     io_wait();
 
-    /* Restore saved masks */
-    outb(PIC1_DATA, mask1);
-    outb(PIC2_DATA, mask2);
+    /* Mask all IRQs initially - will unmask keyboard (IRQ1) later */
+    outb(PIC1_DATA, 0xFF);  /* Mask all IRQs on master PIC */
+    outb(PIC2_DATA, 0xFF);  /* Mask all IRQs on slave PIC */
 }
 
 /*
