@@ -34,8 +34,10 @@ SECTIONS
     /*
     ** .text section - Executable code
     ** The multiboot header MUST come first (within first 8KB)
+    ** NOTE: Do NOT use BLOCK() here - it would add padding before .text
+    ** which pushes multiboot header beyond 8KB limit!
     */
-    .text BLOCK(4K) : ALIGN(4K)
+    .text : ALIGN(4K)
     {
         *(.multiboot)       /* Multiboot header first! */
         *(.text)            /* All other code */

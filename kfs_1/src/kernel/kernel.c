@@ -13,6 +13,11 @@
 /* ************************************************************************** */
 
 #include "kernel.h"
+#include "../include/idt.h"
+#include "../include/pic.h"
+#include "../include/keyboard.h"
+#include "../include/mouse.h"
+#include "../include/vtty.h"
 
 /*
 ** ==========================================================================
@@ -180,18 +185,18 @@ void printk(const char *format, ...)
 
 static void display_42_banner(void)
 {
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
-    vga_putstr("\n");
-    vga_putstr("        ##   #####  \n");
-    vga_putstr("        ##  ##   ## \n");
-    vga_putstr("        ## ##     ##\n");
-    vga_putstr("   ##   ##       ## \n");
-    vga_putstr("   ##   ##      ##  \n");
-    vga_putstr("   ##   ##     ##   \n");
-    vga_putstr("   #######    ##    \n");
-    vga_putstr("        ##   ##     \n");
-    vga_putstr("        ##  ####### \n");
-    vga_putstr("\n");
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK));
+    vtty_putstr("\n");
+    vtty_putstr("        ##   #####  \n");
+    vtty_putstr("        ##  ##   ## \n");
+    vtty_putstr("        ## ##     ##\n");
+    vtty_putstr("   ##   ##       ## \n");
+    vtty_putstr("   ##   ##      ##  \n");
+    vtty_putstr("   ##   ##     ##   \n");
+    vtty_putstr("   #######    ##    \n");
+    vtty_putstr("        ##   ##     \n");
+    vtty_putstr("        ##  ####### \n");
+    vtty_putstr("\n");
 }
 
 /*
@@ -207,35 +212,41 @@ void kernel_main(void)
     /* Initialize VGA terminal */
     vga_init();
 
-    /* Display kernel header */
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
-    vga_putstr("===========================================\n");
-    vga_putstr("  ");
-    vga_putstr(KERNEL_NAME);
-    vga_putstr(" v");
-    vga_putstr(KERNEL_VERSION);
-    vga_putstr(" - ");
-    vga_putstr(KERNEL_AUTHOR);
-    vga_putstr("\n");
-    vga_putstr("===========================================\n");
+    /* Initialize interrupt subsystem BEFORE virtual terminals */
+    pic_init();
+    idt_init();
+
+    /* Initialize keyboard driver (interrupts still disabled) */
+    keyboard_init();
+
+    /* Initialize mouse driver */
+    mouse_init();
+
+    /* Initialize virtual terminals - MUST be before screen output */
+    vtty_init();
+
+    /* Now display content to terminal 0 */
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
+    vtty_putstr("===========================================\n");
+    vtty_putstr("  ");
+    vtty_putstr(KERNEL_NAME);
+    vtty_putstr(" v");
+    vtty_putstr(KERNEL_VERSION);
+    vtty_putstr(" - ");
+    vtty_putstr(KERNEL_AUTHOR);
+    vtty_putstr("\n");
+    vtty_putstr("===========================================\n");
 
     /* Display mandatory "42" */
     display_42_banner();
 
-    /* Display system information */
-    vga_set_color(vga_make_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK));
-    vga_putstr("Kernel loaded successfully!\n\n");
+    /* Enable interrupts */
+    __asm__ volatile ("sti");
 
-    /* Demo printk (Bonus) */
-    vga_set_color(vga_make_color(VGA_COLOR_YELLOW, VGA_COLOR_BLACK));
-    printk("printk test: string=%s, char=%c, int=%d\n", "hello", 'X', -42);
-    printk("printk test: uint=%u, hex=%x, ptr=%p\n", 12345, 0xDEAD, (void *)0xB8000);
+    vtty_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
 
-    /* Final message */
-    vga_set_color(vga_make_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK));
-    vga_putstr("\nSystem ready. Halting CPU.\n");
-
-    /* Halt - kernel should never return */
+    /* Switch to virtual terminal system */
+    /* Terminal 0 is active - keyboard input will be echoed */
     while (1)
     {
         __asm__ volatile ("hlt");

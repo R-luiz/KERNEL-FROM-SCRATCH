@@ -52,6 +52,52 @@ stack_bottom:
 stack_top:
 
 ; =============================================================================
+; GDT - Global Descriptor Table
+; =============================================================================
+; We define our own GDT to ensure consistent segment selectors
+; regardless of boot method (GRUB or direct QEMU)
+;
+; Layout:
+;   0x00: Null descriptor (required)
+;   0x08: Code segment (ring 0, execute/read, 4GB flat)
+;   0x10: Data segment (ring 0, read/write, 4GB flat)
+
+section .rodata
+align 16
+gdt_start:
+    ; Null descriptor (entry 0)
+    dq 0x0000000000000000
+
+    ; Code segment descriptor (entry 1, selector 0x08)
+    ; Base=0, Limit=0xFFFFF, Access=0x9A (present, ring0, code, exec/read)
+    ; Flags=0xC (4KB granularity, 32-bit)
+    dw 0xFFFF       ; Limit bits 0-15
+    dw 0x0000       ; Base bits 0-15
+    db 0x00         ; Base bits 16-23
+    db 0x9A         ; Access: present, ring0, code segment, exec/read
+    db 0xCF         ; Flags (4KB gran, 32-bit) + Limit bits 16-19
+    db 0x00         ; Base bits 24-31
+
+    ; Data segment descriptor (entry 2, selector 0x10)
+    ; Base=0, Limit=0xFFFFF, Access=0x92 (present, ring0, data, read/write)
+    ; Flags=0xC (4KB granularity, 32-bit)
+    dw 0xFFFF       ; Limit bits 0-15
+    dw 0x0000       ; Base bits 0-15
+    db 0x00         ; Base bits 16-23
+    db 0x92         ; Access: present, ring0, data segment, read/write
+    db 0xCF         ; Flags (4KB gran, 32-bit) + Limit bits 16-19
+    db 0x00         ; Base bits 24-31
+gdt_end:
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1  ; GDT size (limit)
+    dd gdt_start                ; GDT base address
+
+; Segment selector constants
+CODE_SEG equ 0x08
+DATA_SEG equ 0x10
+
+; =============================================================================
 ; Text Section - Executable Code
 ; =============================================================================
 
@@ -75,6 +121,25 @@ _start:
     ; Disable interrupts (should already be disabled, but be safe)
     cli
 
+    ; Save multiboot parameters before we clobber registers
+    mov edi, eax                        ; Save magic number
+    mov esi, ebx                        ; Save multiboot info pointer
+
+    ; Load our own GDT to ensure consistent segment selectors
+    lgdt [gdt_descriptor]
+
+    ; Far jump to reload CS with our code segment selector
+    jmp CODE_SEG:.reload_segments
+
+.reload_segments:
+    ; Reload data segment registers with our data segment selector
+    mov ax, DATA_SEG
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
     ; Set up the stack
     ; ESP must point to the top of our reserved stack space
     mov esp, stack_top
@@ -84,8 +149,8 @@ _start:
 
     ; Push multiboot info for potential future use
     ; These will be available as parameters to kernel_main if needed
-    push ebx                            ; Multiboot info pointer
-    push eax                            ; Multiboot magic number
+    push esi                            ; Multiboot info pointer
+    push edi                            ; Multiboot magic number
 
     ; Call the kernel main function
     call kernel_main
