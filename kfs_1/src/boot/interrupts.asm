@@ -21,8 +21,8 @@ extern irq_handler
 global isr_stub_%1
 isr_stub_%1:
     cli                         ; Disable interrupts
-    push byte 0                 ; Dummy error code
-    push byte %1                ; Interrupt number
+    push dword 0                ; Dummy error code (4 bytes)
+    push dword %1               ; Interrupt number (4 bytes)
     jmp isr_common_stub
 %endmacro
 
@@ -30,7 +30,7 @@ isr_stub_%1:
 global isr_stub_%1
 isr_stub_%1:
     cli                         ; Disable interrupts
-    push byte %1                ; Interrupt number (error already pushed by CPU)
+    push dword %1               ; Interrupt number (4 bytes, error already pushed by CPU)
     jmp isr_common_stub
 %endmacro
 
@@ -42,8 +42,8 @@ isr_stub_%1:
 global irq_stub_%1
 irq_stub_%1:
     cli
-    push byte 0                 ; Dummy error code
-    push byte (%1 + 32)         ; IRQ number + 32
+    push dword 0                ; Dummy error code (4 bytes)
+    push dword (%1 + 32)        ; IRQ number + 32 (4 bytes)
     jmp irq_common_stub
 %endmacro
 
