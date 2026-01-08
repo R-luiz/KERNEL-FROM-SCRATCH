@@ -12,6 +12,7 @@
 
 #include "kernel.h"
 #include "../include/idt.h"
+#include "../include/pic.h"
 #include "../include/keyboard.h"
 #include "../include/vtty.h"
 
@@ -34,34 +35,44 @@ void isr_handler(void)
 ** IRQ Handler - Hardware Interrupts
 ** ==========================================================================
 ** Called from assembly stub when hardware IRQ occurs
+** Stack contains: [saved_regs] [ds] [error_code] [irq_num] [eip] [cs] [eflags]
 ** NASA Rule #4: Function under 60 lines
 */
 
-void irq_handler(void)
+void irq_handler(uint32_t irq_num)
 {
     t_key_event key;
     bool_t      alt_held;
+    uint8_t     irq;
 
-    /* For simplicity, we handle keyboard directly since it's IRQ1 */
-    /* The keyboard handler will send EOI */
-    keyboard_handler();
+    /* Extract actual IRQ number (irq_num is 32-47, IRQ is 0-15) */
+    irq = (uint8_t)(irq_num - 32);
 
-    /* Process keyboard events from buffer */
-    while (keyboard_has_key())
+    /* Handle keyboard interrupt (IRQ1) */
+    if (irq == 1)
     {
-        key = keyboard_get_key();
-        alt_held = keyboard_alt_pressed();
+        keyboard_handler();
 
-        /* Check for terminal switch (Alt+F1/F2/F3/F4) */
-        if (alt_held && key.scancode >= KEY_F1 && key.scancode <= KEY_F4)
+        /* Process keyboard events from buffer */
+        while (keyboard_has_key())
         {
-            /* Alt+F1 through Alt+F4 for terminals 0-3 */
-            vtty_switch((uint8_t)(key.scancode - KEY_F1));
+            key = keyboard_get_key();
+            alt_held = keyboard_alt_pressed();
+
+            /* Check for terminal switch (Alt+F1/F2/F3/F4) */
+            if (alt_held && key.scancode >= KEY_F1 && key.scancode <= KEY_F4)
+            {
+                vtty_switch((uint8_t)(key.scancode - KEY_F1));
+            }
+            else if (key.ascii != 0)
+            {
+                vtty_putchar(key.ascii);
+            }
         }
-        else if (key.ascii != 0)
-        {
-            /* Echo printable character to current terminal */
-            vtty_putchar(key.ascii);
-        }
+    }
+    else
+    {
+        /* Other IRQs: just acknowledge them for now */
+        pic_send_eoi(irq);
     }
 }

@@ -149,7 +149,15 @@ irq_common_stub:
     mov fs, ax
     mov gs, ax
 
+    ; Push IRQ number as parameter to C handler
+    ; Stack layout: [pusha] [ds] [error_code] [irq_num] [eip] [cs] [eflags]
+    ; The IRQ number is at [esp + 36] (8 regs * 4 bytes + ds 4 bytes = 36)
+    mov eax, [esp + 36]
+    push eax
+
     call irq_handler    ; Call C handler
+
+    add esp, 4          ; Clean up parameter
 
     pop eax             ; Restore data segment
     mov ds, ax
