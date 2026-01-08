@@ -152,9 +152,9 @@ irq_common_stub:
     mov gs, ax
 
     ; Push IRQ number as parameter to C handler
-    ; Stack layout: [pusha] [ds] [error_code] [irq_num] [eip] [cs] [eflags]
-    ; The IRQ number is at [esp + 36] (8 regs * 4 bytes + ds 4 bytes = 36)
-    mov eax, [esp + 36]
+    ; Stack layout: [ds] [pusha] [error_code] [irq_num] [eip] [cs] [eflags]
+    ; The IRQ number is at [esp + 40] (ds 4 bytes + 8 regs * 4 bytes + error 4 bytes = 40)
+    mov eax, [esp + 40]
     push eax
 
     call irq_handler    ; Call C handler
