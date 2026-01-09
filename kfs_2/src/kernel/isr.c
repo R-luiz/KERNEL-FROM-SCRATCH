@@ -41,25 +41,12 @@ void isr_handler(void)
 
 static void handle_keyboard_irq(void)
 {
-    t_key_event key;
-    bool_t      alt_held;
-
+    /*
+     * Only call the keyboard handler to read scancode from hardware
+     * and queue the event. The shell will consume events from the queue.
+     * We do NOT consume events here - that's the shell's job.
+     */
     keyboard_handler();
-
-    while (keyboard_has_key())
-    {
-        key = keyboard_get_key();
-        alt_held = keyboard_alt_pressed();
-
-        if (alt_held && key.scancode >= KEY_F1 && key.scancode <= KEY_F4)
-        {
-            vtty_switch((uint8_t)(key.scancode - KEY_F1));
-        }
-        else if (key.ascii != 0)
-        {
-            vtty_putchar(key.ascii);
-        }
-    }
 }
 
 /*

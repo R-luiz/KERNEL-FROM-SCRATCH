@@ -227,8 +227,8 @@ void    shell_input(char c)
             {
                 g_cmd_buffer[g_cmd_pos] = c;
                 g_cmd_pos++;
-                /* Echo character */
-                vga_putchar(c);
+                /* Echo character to vtty (supports scrollback) */
+                vtty_putchar(c);
             }
             break;
     }
@@ -344,7 +344,7 @@ int     cmd_clear(int argc, char **argv)
     (void)argc;
     (void)argv;
 
-    vga_clear();
+    vtty_clear();
     return 0;
 }
 
