@@ -41,16 +41,6 @@ static char     *g_argv[SHELL_MAX_ARGS];
  * Command Table
  * ============================================================================ */
 
-/* Forward declarations of command handlers */
-int cmd_help(int argc, char **argv);
-int cmd_stack(int argc, char **argv);
-int cmd_gdt(int argc, char **argv);
-int cmd_reboot(int argc, char **argv);
-int cmd_halt(int argc, char **argv);
-int cmd_clear(int argc, char **argv);
-int cmd_info(int argc, char **argv);
-int cmd_regs(int argc, char **argv);
-
 /* Table of available commands */
 static const t_shell_cmd g_commands[] = {
     {"help",    "Display this help message",            cmd_help},
@@ -256,9 +246,9 @@ void    shell_run(void)
     while (1)
     {
         /* Check for keyboard input */
-        if (keyboard_has_event())
+        if (keyboard_has_key())
         {
-            event = keyboard_get_event();
+            event = keyboard_get_key();
 
             /* Only process key press events (not releases) */
             if (event.pressed && event.ascii != 0)
