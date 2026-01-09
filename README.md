@@ -2,11 +2,20 @@
 
 A minimal 32-bit x86 operating system kernel written in C and Assembly, designed to boot via GRUB and run on both real hardware and virtual machines. Built following NASA/JPL C Coding Standards.
 
+## Projects
+
+### KFS-1: Basic Kernel
+First iteration with VGA output, keyboard/mouse input, and virtual terminals.
+
+### KFS-2: GDT & Shell (Current)
+Extended with proper GDT implementation, interactive shell, stack inspection, and CPU control commands.
+
 ## Features
 
 ### Core System
 - **Multiboot Compliant**: Boots via GRUB bootloader
 - **Protected Mode**: 32-bit protected mode with custom GDT
+- **GDT at 0x800**: Properly structured Global Descriptor Table with null, code, data, and stack segments
 - **VGA Text Mode**: 80x25 display, 16 colors
 - **Interrupt System**: Full IDT with CPU exceptions and hardware IRQs
 - **PIC Management**: Remapped IRQs (0-15 to vectors 32-47)
@@ -20,38 +29,60 @@ A minimal 32-bit x86 operating system kernel written in C and Assembly, designed
 - **4 Virtual Terminals**: Independent TTYs (Alt+F1-F4 to switch)
 - **200-line Scrollback**: Per-terminal history buffer
 - **Mouse Scroll Navigation**: Scroll wheel to view history
+- **Interactive Shell**: Command interpreter with built-in commands
+
+### Shell Commands (KFS-2)
+| Command | Description |
+|---------|-------------|
+| `help` | Show available commands |
+| `stack` | Print kernel stack dump |
+| `gdt` | Display GDT at 0x800 |
+| `regs` | Display CPU registers |
+| `clear` | Clear the screen |
+| `info` | Show kernel info |
+| `reboot` | Reboot system |
+| `halt` | Halt CPU |
 
 ## Project Structure
 
 ```
-kfs_1/
-├── Makefile                    # Build system (NASA-compliant flags)
-├── linker.ld                   # Memory layout (kernel at 1MB)
-├── iso/boot/grub/grub.cfg      # GRUB configuration
+kfs_1/                          # Basic kernel (Phase 1)
+├── Makefile
+├── linker.ld
+├── iso/boot/grub/grub.cfg
 └── src/
     ├── boot/
-    │   ├── boot.asm            # Entry point, GDT, stack setup
-    │   └── interrupts.asm      # ISR/IRQ assembly stubs
+    │   ├── boot.asm
+    │   └── interrupts.asm
     ├── kernel/
-    │   ├── kernel.c            # Main entry, printk, panic
-    │   ├── kernel.h            # Kernel constants
-    │   ├── idt.c               # Interrupt Descriptor Table
-    │   ├── pic.c               # PIC initialization
-    │   ├── isr.c               # Interrupt handlers
-    │   └── vtty.c              # Virtual terminal system
+    │   ├── kernel.c, idt.c, pic.c, isr.c, vtty.c
     ├── drivers/
-    │   ├── vga.c / vga.h       # VGA text mode driver
-    │   ├── keyboard.c          # PS/2 keyboard driver
-    │   └── mouse.c             # PS/2 mouse driver
+    │   ├── vga.c, keyboard.c, mouse.c
     ├── lib/
-    │   ├── string.c / string.h # Memory/string utilities
+    │   └── string.c
     └── include/
-        ├── types.h             # Fixed-width types, attributes
-        ├── idt.h               # IDT structures
-        ├── pic.h               # PIC constants
-        ├── keyboard.h          # Keyboard interface
-        ├── mouse.h             # Mouse interface
-        └── vtty.h              # Terminal interface
+        └── *.h
+
+kfs_2/                          # GDT & Shell (Phase 2)
+├── Makefile
+├── linker.ld
+├── iso/boot/grub/grub.cfg
+└── src/
+    ├── boot/
+    │   ├── boot.asm            # GDT at 0x800
+    │   └── interrupts.asm
+    ├── kernel/
+    │   ├── kernel.c            # Main entry
+    │   ├── gdt.c               # GDT display utilities
+    │   ├── shell.c             # Interactive shell
+    │   ├── stack.c             # Stack inspection
+    │   ├── idt.c, pic.c, isr.c, vtty.c
+    ├── drivers/
+    │   ├── vga.c, keyboard.c, mouse.c
+    ├── lib/
+    │   └── string.c
+    └── include/
+        └── *.h (gdt.h, shell.h, stack.h, ...)
 ```
 
 ## Building
@@ -65,7 +96,7 @@ kfs_1/
 
 ### Commands
 ```bash
-cd kfs_1
+cd kfs_2  # or kfs_1
 make all        # Build kernel
 make iso        # Create bootable ISO
 make clean      # Remove objects
@@ -74,6 +105,43 @@ make re         # Rebuild
 ```
 
 ## Running
+
+### Option 1: Using WSL (Recommended for Windows)
+
+```powershell
+# Build the kernel
+wsl -d Ubuntu -e bash -c "cd '/mnt/c/Users/luizr/Documents/Nouveau dossier/KERNEL-FROM-SCRATCH/kfs_2' && make all"
+
+# Run in QEMU (Windows QEMU)
+& "C:\Program Files\qemu\qemu-system-i386.exe" -kernel "C:\Users\luizr\Documents\Nouveau dossier\KERNEL-FROM-SCRATCH\kfs_2\build\kernel.bin" -m 32M
+
+# Or create and boot from ISO
+wsl -d Ubuntu -e bash -c "cd '/mnt/c/Users/luizr/Documents/Nouveau dossier/KERNEL-FROM-SCRATCH/kfs_2' && make iso"
+& "C:\Program Files\qemu\qemu-system-i386.exe" -cdrom "C:\Users\luizr\Documents\Nouveau dossier\KERNEL-FROM-SCRATCH\kfs_2\kfs_2.iso" -m 32M
+```
+
+### Option 2: Fully Inside WSL Ubuntu
+
+```bash
+# Open WSL Ubuntu terminal
+wsl -d Ubuntu
+
+# Navigate to project
+cd '/mnt/c/Users/luizr/Documents/Nouveau dossier/KERNEL-FROM-SCRATCH/kfs_2'
+
+# Build
+make clean && make all
+
+# Run directly (requires X display - WSLg)
+export DISPLAY=:0
+make run
+
+# Or boot from ISO
+make iso
+make run-iso
+```
+
+### Option 3: Native Linux
 
 ```bash
 make run            # QEMU direct boot
@@ -85,7 +153,7 @@ make debug          # GDB server on port 1234
 
 ### VirtualBox
 1. Create VM (Type: Other, Version: Other/Unknown)
-2. Attach `kfs_1.iso` as CD/DVD
+2. Attach `kfs_2.iso` as CD/DVD
 3. Boot
 
 ## Controls
@@ -113,12 +181,16 @@ make debug          # GDB server on port 1234
 | 0x00000-0xFFFFF | Reserved (BIOS, VGA at 0xB8000) |
 | 0x100000+ | Kernel code and data |
 
-### GDT (Custom)
+### GDT (at 0x800)
 | Selector | Segment |
 |----------|---------|
 | 0x00 | Null |
-| 0x08 | Code (ring 0, 4GB) |
-| 0x10 | Data (ring 0, 4GB) |
+| 0x08 | Kernel Code (ring 0, 4GB) |
+| 0x10 | Kernel Data (ring 0, 4GB) |
+| 0x18 | Kernel Stack (ring 0, 4GB) |
+| 0x20 | User Code (ring 3, 4GB) |
+| 0x28 | User Data (ring 3, 4GB) |
+| 0x30 | User Stack (ring 3, 4GB) |
 
 ### IDT
 | Vector | Handler |

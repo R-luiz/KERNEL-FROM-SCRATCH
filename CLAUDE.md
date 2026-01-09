@@ -4,14 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-KFS_1 (Kernel From Scratch) is a minimal 32-bit x86 operating system kernel that boots via GRUB and runs on both real hardware and virtual machines. Features include PS/2 keyboard and mouse support, 4 virtual terminals with scrollback, and full interrupt handling. Written to comply with NASA/JPL C Coding Standards.
+KFS (Kernel From Scratch) is a minimal 32-bit x86 operating system kernel that boots via GRUB and runs on both real hardware and virtual machines. Features include PS/2 keyboard and mouse support, 4 virtual terminals with scrollback, and full interrupt handling. Written to comply with NASA/JPL C Coding Standards.
+
+### KFS-1 (Phase 1)
+Basic kernel with VGA output, keyboard/mouse input, and virtual terminals.
+
+### KFS-2 (Phase 2 - Current)
+Extended with:
+- GDT at 0x800 with 7 segments (null, kernel code/data/stack, user code/data/stack)
+- Interactive shell with built-in commands
+- Stack inspection and dump utilities
+- CPU register display
+- System control (reboot, halt)
 
 ## Build Commands
 
-All commands are run from the `kfs_1/` directory using the provided Makefile:
+### Using WSL on Windows (Recommended)
+
+```powershell
+# Build the kernel
+wsl -d Ubuntu -e bash -c "cd '/mnt/c/Users/luizr/Documents/Nouveau dossier/KERNEL-FROM-SCRATCH/kfs_2' && make all"
+
+# Create bootable ISO
+wsl -d Ubuntu -e bash -c "cd '/mnt/c/Users/luizr/Documents/Nouveau dossier/KERNEL-FROM-SCRATCH/kfs_2' && make iso"
+
+# Run in QEMU (Windows)
+& "C:\Program Files\qemu\qemu-system-i386.exe" -cdrom "C:\Users\luizr\Documents\Nouveau dossier\KERNEL-FROM-SCRATCH\kfs_2\kfs_2.iso" -m 32M
+```
+
+### Inside WSL Ubuntu
 
 ```bash
-cd kfs_1
+cd '/mnt/c/Users/luizr/Documents/Nouveau dossier/KERNEL-FROM-SCRATCH/kfs_2'
 
 # Build kernel binary
 make all
@@ -30,6 +54,18 @@ make iso
 ```
 
 ## Running and Testing
+
+### Windows with WSL + QEMU
+
+```powershell
+# Direct kernel boot
+& "C:\Program Files\qemu\qemu-system-i386.exe" -kernel "C:\Users\luizr\Documents\Nouveau dossier\KERNEL-FROM-SCRATCH\kfs_2\build\kernel.bin" -m 32M
+
+# Boot from ISO
+& "C:\Program Files\qemu\qemu-system-i386.exe" -cdrom "C:\Users\luizr\Documents\Nouveau dossier\KERNEL-FROM-SCRATCH\kfs_2\kfs_2.iso" -m 32M
+```
+
+### Inside WSL Ubuntu
 
 ```bash
 # Run kernel directly in QEMU (software emulation)
@@ -52,6 +88,24 @@ make check
 # Verify ISO size (must be < 10MB)
 make check-iso
 ```
+
+## Shell Commands (KFS-2)
+
+| Command | Description |
+|---------|-------------|
+| `help` | Show available commands |
+| `stack` | Print kernel stack dump (shows EBP chain and return addresses) |
+| `gdt` | Display GDT entries at 0x800 (base, limit, flags) |
+| `regs` | Display CPU registers (EAX, EBX, ECX, EDX, ESP, EBP, ESI, EDI, EFLAGS) |
+| `clear` | Clear the screen |
+| `info` | Show kernel info |
+| `reboot` | Reboot system (via keyboard controller) |
+| `halt` | Halt CPU (cli + hlt) |
+
+## Keyboard Shortcuts
+
+- **Alt+F1-F4**: Switch between virtual terminals
+- **Mouse scroll wheel**: Scroll through terminal history
 
 ## Code Architecture
 
@@ -150,17 +204,37 @@ make check-iso
 ## Directory Structure
 
 ```
-kfs_1/
-├── Makefile                    # Build system (NASA-compliant flags)
-├── linker.ld                   # Memory layout (kernel at 1MB)
-├── iso/boot/grub/grub.cfg      # GRUB configuration
+kfs_1/                          # Phase 1: Basic Kernel
+├── Makefile
+├── linker.ld
+├── iso/boot/grub/grub.cfg
 └── src/
     ├── boot/
-    │   ├── boot.asm            # Entry point, GDT, stack setup
-    │   └── interrupts.asm      # ISR/IRQ assembly stubs
+    │   ├── boot.asm
+    │   └── interrupts.asm
+    ├── kernel/
+    │   ├── kernel.c, idt.c, pic.c, isr.c, vtty.c
+    ├── drivers/
+    │   ├── vga.c, keyboard.c, mouse.c
+    ├── lib/
+    │   └── string.c
+    └── include/
+        └── *.h
+
+kfs_2/                          # Phase 2: GDT & Shell
+├── Makefile
+├── linker.ld
+├── iso/boot/grub/grub.cfg
+└── src/
+    ├── boot/
+    │   ├── boot.asm            # GDT at 0x800 with 7 segments
+    │   └── interrupts.asm
     ├── kernel/
     │   ├── kernel.c            # Main entry, printk, panic
     │   ├── kernel.h            # Kernel constants
+    │   ├── gdt.c               # GDT display utilities
+    │   ├── shell.c             # Interactive shell commands
+    │   ├── stack.c             # Stack inspection utilities
     │   ├── idt.c               # Interrupt Descriptor Table
     │   ├── pic.c               # PIC initialization
     │   ├── isr.c               # Interrupt handlers
@@ -173,6 +247,9 @@ kfs_1/
     │   ├── string.c / string.h # Memory/string utilities
     └── include/
         ├── types.h             # Fixed-width types, attributes
+        ├── gdt.h               # GDT structures and interface
+        ├── shell.h             # Shell command interface
+        ├── stack.h             # Stack inspection interface
         ├── idt.h               # IDT structures
         ├── pic.h               # PIC constants
         ├── keyboard.h          # Keyboard interface
@@ -182,12 +259,16 @@ kfs_1/
 
 ## Technical Details
 
-### GDT (Custom in boot.asm)
-| Selector | Segment |
-|----------|---------|
-| 0x00 | Null |
-| 0x08 | Code (ring 0, 4GB) |
-| 0x10 | Data (ring 0, 4GB) |
+### GDT (at 0x800 in boot.asm)
+| Selector | Segment | Description |
+|----------|---------|-------------|
+| 0x00 | Null | Required null descriptor |
+| 0x08 | Kernel Code | Ring 0, 4GB, executable |
+| 0x10 | Kernel Data | Ring 0, 4GB, read/write |
+| 0x18 | Kernel Stack | Ring 0, 4GB, read/write |
+| 0x20 | User Code | Ring 3, 4GB, executable |
+| 0x28 | User Data | Ring 3, 4GB, read/write |
+| 0x30 | User Stack | Ring 3, 4GB, read/write |
 
 ### IDT Vectors
 | Vector | Handler |
