@@ -28,7 +28,9 @@ extern void printk(const char *fmt, ...);
 
 /*
  * Pointer to GDT at address 0x800
- * We cast the fixed address to our structure pointer
+ * We cast the fixed address to our structure pointer.
+ * Note: This file is compiled with -Wno-array-bounds because the compiler
+ * cannot statically verify bounds for hardware-mapped memory.
  */
 static t_gdt_entry  *g_gdt = (t_gdt_entry *)GDT_ADDRESS;
 

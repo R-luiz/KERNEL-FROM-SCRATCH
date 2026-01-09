@@ -76,6 +76,9 @@ INCLUDES        := -I$(SRC_DIR)/include \
 # Combined C flags (no debug symbols for smaller binary)
 CFLAGS          := $(KERNEL_FLAGS) $(NASA_FLAGS) $(INCLUDES) -std=c99 -Os
 
+# Special flags for gdt.c (disable array-bounds for hardware-mapped memory)
+GDT_CFLAGS      := $(CFLAGS) -Wno-array-bounds
+
 # Assembler flags
 ASFLAGS         := -f elf32
 
@@ -136,6 +139,12 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@echo "  CC      $<"
 	@$(CC) $(CFLAGS) -c -o $@ $<
+
+# Special rule for gdt.c (uses hardware-mapped memory at 0x800)
+$(BUILD_DIR)/kernel/gdt.o: $(SRC_DIR)/kernel/gdt.c
+	@mkdir -p $(dir $@)
+	@echo "  CC      $< (hardware memory access)"
+	@$(CC) $(GDT_CFLAGS) -c -o $@ $<
 
 # =============================================================================
 # ISO Image Creation
