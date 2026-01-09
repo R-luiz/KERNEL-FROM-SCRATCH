@@ -12,6 +12,7 @@
 #include "stack.h"
 #include "gdt.h"
 #include "keyboard.h"
+#include "vtty.h"
 #include "vga.h"
 #include "types.h"
 
@@ -250,10 +251,20 @@ void    shell_run(void)
         {
             event = keyboard_get_key();
 
-            /* Only process key press events (not releases) */
-            if (event.pressed && event.ascii != 0)
+            /* Only process key press events */
+            if (event.pressed)
             {
-                shell_input(event.ascii);
+                /* Handle Alt+F1-F4 for terminal switching */
+                if (keyboard_alt_pressed() &&
+                    event.scancode >= KEY_F1 && event.scancode <= KEY_F4)
+                {
+                    vtty_switch((uint8_t)(event.scancode - KEY_F1));
+                }
+                /* Handle regular characters */
+                else if (event.ascii != 0)
+                {
+                    shell_input(event.ascii);
+                }
             }
         }
 
