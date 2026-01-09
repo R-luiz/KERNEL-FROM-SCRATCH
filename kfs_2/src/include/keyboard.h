@@ -1,35 +1,13 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*   KFS_1 - Kernel From Scratch                                              */
-/*                                                                            */
-/*   keyboard.h - PS/2 Keyboard Driver Interface                              */
-/*                                                                            */
-/*   NASA/JPL C Coding Standards Compliant                                    */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
 #include "types.h"
-
-/*
-** ==========================================================================
-** Keyboard Constants
-** ==========================================================================
-*/
 
 #define KEYBOARD_DATA_PORT      0x60
 #define KEYBOARD_STATUS_PORT    0x64
 #define KEYBOARD_COMMAND_PORT   0x64
 
 #define KEYBOARD_BUFFER_SIZE    256
-
-/*
-** ==========================================================================
-** Keyboard Special Keys
-** ==========================================================================
-*/
 
 #define KEY_ESC         0x01
 #define KEY_BACKSPACE   0x0E
@@ -55,12 +33,6 @@
 
 #define KEY_RELEASED_OFFSET     0x80
 
-/*
-** ==========================================================================
-** Keyboard State Structure
-** ==========================================================================
-*/
-
 typedef struct s_keyboard_state
 {
     bool_t      shift_pressed;
@@ -69,24 +41,12 @@ typedef struct s_keyboard_state
     bool_t      caps_lock;
 }   t_keyboard_state;
 
-/*
-** ==========================================================================
-** Keyboard Event Structure
-** ==========================================================================
-*/
-
 typedef struct s_key_event
 {
     uint8_t     scancode;
     char        ascii;
     bool_t      pressed;
 }   t_key_event;
-
-/*
-** ==========================================================================
-** Function Declarations
-** ==========================================================================
-*/
 
 void        keyboard_init(void);
 void        keyboard_handler(void);
@@ -95,4 +55,4 @@ t_key_event keyboard_get_key(void);
 char        keyboard_getchar(void);
 bool_t      keyboard_alt_pressed(void);
 
-#endif /* KEYBOARD_H */
+#endif

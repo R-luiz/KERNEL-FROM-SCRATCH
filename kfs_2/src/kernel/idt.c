@@ -1,39 +1,12 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*   KFS_1 - Kernel From Scratch                                              */
-/*                                                                            */
-/*   idt.c - Interrupt Descriptor Table Implementation                        */
-/*                                                                            */
-/*   NASA/JPL C Coding Standards Compliant:                                   */
-/*   - No recursion                                                           */
-/*   - All loops bounded                                                      */
-/*   - Functions <= 60 lines                                                  */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "../include/idt.h"
 #include "../lib/string.h"
-
-/*
-** ==========================================================================
-** Global IDT Table and Pointer
-** ==========================================================================
-*/
 
 static t_idt_entry  g_idt[IDT_ENTRIES] ALIGNED(16);
 static t_idt_ptr    g_idtp;
 
-/*
-** ==========================================================================
-** IDT Entry Configuration
-** ==========================================================================
-** Sets an entry in the IDT
-** NASA Rule #4: Function under 60 lines
-*/
-
 void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
 {
-    /* num is uint8_t (0-255), IDT has 256 entries, so always valid */
+
     g_idt[num].offset_low = (uint16_t)(base & 0xFFFF);
     g_idt[num].offset_high = (uint16_t)((base >> 16) & 0xFFFF);
     g_idt[num].selector = sel;
@@ -41,31 +14,23 @@ void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
     g_idt[num].type_attr = flags;
 }
 
-/*
-** ==========================================================================
-** IDT Initialization
-** ==========================================================================
-** Sets up the Interrupt Descriptor Table
-** NASA Rule #2: Bounded loop (256 iterations)
-*/
-
 void idt_init(void)
 {
     uint16_t    i;
     uint8_t     flags;
 
-    /* Clear IDT */
+
     k_memset(g_idt, 0, sizeof(g_idt));
 
-    /* Set up IDT pointer */
+
     g_idtp.limit = (uint16_t)(sizeof(g_idt) - 1);
     g_idtp.base = (uint32_t)&g_idt;
 
-    /* Standard interrupt gate flags: present, DPL0, 32-bit interrupt gate */
+
     flags = (uint8_t)(IDT_FLAG_PRESENT | IDT_FLAG_DPL0 | IDT_GATE_INT32);
 
-    /* Install CPU exception handlers (0-31) */
-    /* Our GDT: Code segment = 0x08, Data segment = 0x10 */
+
+
     idt_set_gate(0, (uint32_t)isr_stub_0, 0x08, flags);
     idt_set_gate(1, (uint32_t)isr_stub_1, 0x08, flags);
     idt_set_gate(2, (uint32_t)isr_stub_2, 0x08, flags);
@@ -99,7 +64,7 @@ void idt_init(void)
     idt_set_gate(30, (uint32_t)isr_stub_30, 0x08, flags);
     idt_set_gate(31, (uint32_t)isr_stub_31, 0x08, flags);
 
-    /* Install IRQ handlers (32-47) */
+
     idt_set_gate(32, (uint32_t)irq_stub_0, 0x08, flags);
     idt_set_gate(33, (uint32_t)irq_stub_1, 0x08, flags);
     idt_set_gate(34, (uint32_t)irq_stub_2, 0x08, flags);
@@ -117,7 +82,7 @@ void idt_init(void)
     idt_set_gate(46, (uint32_t)irq_stub_14, 0x08, flags);
     idt_set_gate(47, (uint32_t)irq_stub_15, 0x08, flags);
 
-    /* Set default handler for remaining entries (48-255) */
+
     i = 48;
     while (i < IDT_ENTRIES)
     {
@@ -125,16 +90,9 @@ void idt_init(void)
         i++;
     }
 
-    /* Load the IDT */
+
     idt_load();
 }
-
-/*
-** ==========================================================================
-** Load IDT Register
-** ==========================================================================
-** Loads the IDT pointer into the IDTR register using LIDT instruction
-*/
 
 void idt_load(void)
 {

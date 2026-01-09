@@ -1,24 +1,5 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*   KFS_1 - Kernel From Scratch                                              */
-/*                                                                            */
-/*   keyboard.c - PS/2 Keyboard Driver Implementation                         */
-/*                                                                            */
-/*   NASA/JPL C Coding Standards Compliant:                                   */
-/*   - No recursion                                                           */
-/*   - All loops bounded                                                      */
-/*   - Functions <= 60 lines                                                  */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "../include/keyboard.h"
 #include "../include/pic.h"
-
-/*
-** ==========================================================================
-** I/O Port Functions
-** ==========================================================================
-*/
 
 static inline uint8_t inb(uint16_t port)
 {
@@ -27,47 +8,35 @@ static inline uint8_t inb(uint16_t port)
     return (ret);
 }
 
-/*
-** ==========================================================================
-** Scancode to ASCII Translation Tables
-** ==========================================================================
-*/
-
 static const char g_scancode_to_ascii[128] = {
-    0,    27,  '1',  '2',  '3',  '4',  '5',  '6',     /* 0x00 - 0x07 */
-    '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t',   /* 0x08 - 0x0F */
-    'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',     /* 0x10 - 0x17 */
-    'o',  'p',  '[',  ']',  '\n', 0,    'a',  's',     /* 0x18 - 0x1F */
-    'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',     /* 0x20 - 0x27 */
-    '\'', '`',  0,    '\\', 'z',  'x',  'c',  'v',     /* 0x28 - 0x2F */
-    'b',  'n',  'm',  ',',  '.',  '/',  0,    '*',     /* 0x30 - 0x37 */
-    0,    ' ',  0,    0,    0,    0,    0,    0,       /* 0x38 - 0x3F */
-    0,    0,    0,    0,    0,    0,    0,    '7',     /* 0x40 - 0x47 */
-    '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',     /* 0x48 - 0x4F */
-    '2',  '3',  '0',  '.',  0,    0,    0,    0,       /* 0x50 - 0x57 */
-    0,    0,    0,    0,    0,    0,    0,    0        /* 0x58 - 0x5F */
+    0,    27,  '1',  '2',  '3',  '4',  '5',  '6',
+    '7',  '8',  '9',  '0',  '-',  '=',  '\b', '\t',
+    'q',  'w',  'e',  'r',  't',  'y',  'u',  'i',
+    'o',  'p',  '[',  ']',  '\n', 0,    'a',  's',
+    'd',  'f',  'g',  'h',  'j',  'k',  'l',  ';',
+    '\'', '`',  0,    '\\', 'z',  'x',  'c',  'v',
+    'b',  'n',  'm',  ',',  '.',  '/',  0,    '*',
+    0,    ' ',  0,    0,    0,    0,    0,    0,
+    0,    0,    0,    0,    0,    0,    0,    '7',
+    '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',
+    '2',  '3',  '0',  '.',  0,    0,    0,    0,
+    0,    0,    0,    0,    0,    0,    0,    0
 };
 
 static const char g_scancode_to_ascii_shift[128] = {
-    0,    27,  '!',  '@',  '#',  '$',  '%',  '^',     /* 0x00 - 0x07 */
-    '&',  '*',  '(',  ')',  '_',  '+',  '\b', '\t',   /* 0x08 - 0x0F */
-    'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',     /* 0x10 - 0x17 */
-    'O',  'P',  '{',  '}',  '\n', 0,    'A',  'S',     /* 0x18 - 0x1F */
-    'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',     /* 0x20 - 0x27 */
-    '"',  '~',  0,    '|',  'Z',  'X',  'C',  'V',     /* 0x28 - 0x2F */
-    'B',  'N',  'M',  '<',  '>',  '?',  0,    '*',     /* 0x30 - 0x37 */
-    0,    ' ',  0,    0,    0,    0,    0,    0,       /* 0x38 - 0x3F */
-    0,    0,    0,    0,    0,    0,    0,    '7',     /* 0x40 - 0x47 */
-    '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',     /* 0x48 - 0x4F */
-    '2',  '3',  '0',  '.',  0,    0,    0,    0,       /* 0x50 - 0x57 */
-    0,    0,    0,    0,    0,    0,    0,    0        /* 0x58 - 0x5F */
+    0,    27,  '!',  '@',  '#',  '$',  '%',  '^',
+    '&',  '*',  '(',  ')',  '_',  '+',  '\b', '\t',
+    'Q',  'W',  'E',  'R',  'T',  'Y',  'U',  'I',
+    'O',  'P',  '{',  '}',  '\n', 0,    'A',  'S',
+    'D',  'F',  'G',  'H',  'J',  'K',  'L',  ':',
+    '"',  '~',  0,    '|',  'Z',  'X',  'C',  'V',
+    'B',  'N',  'M',  '<',  '>',  '?',  0,    '*',
+    0,    ' ',  0,    0,    0,    0,    0,    0,
+    0,    0,    0,    0,    0,    0,    0,    '7',
+    '8',  '9',  '-',  '4',  '5',  '6',  '+',  '1',
+    '2',  '3',  '0',  '.',  0,    0,    0,    0,
+    0,    0,    0,    0,    0,    0,    0,    0
 };
-
-/*
-** ==========================================================================
-** Keyboard State and Circular Buffer
-** ==========================================================================
-*/
 
 static t_keyboard_state g_kb_state;
 static t_key_event      g_key_buffer[KEYBOARD_BUFFER_SIZE];
@@ -76,12 +45,6 @@ static size_t           g_buffer_write;
 static size_t           g_buffer_count;
 static uint8_t          g_last_scancode;
 static uint32_t         g_debounce_counter;
-
-/*
-** ==========================================================================
-** Keyboard Initialization
-** ==========================================================================
-*/
 
 void keyboard_init(void)
 {
@@ -107,15 +70,9 @@ void keyboard_init(void)
         i++;
     }
 
-    /* Enable keyboard IRQ (IRQ1) */
+
     pic_clear_mask(1);
 }
-
-/*
-** ==========================================================================
-** Scancode to ASCII Translation
-** ==========================================================================
-*/
 
 static char scancode_to_ascii(uint8_t scancode)
 {
@@ -141,12 +98,6 @@ static char scancode_to_ascii(uint8_t scancode)
     return (c);
 }
 
-/*
-** ==========================================================================
-** Update Keyboard State
-** ==========================================================================
-*/
-
 static void update_keyboard_state(uint8_t scancode, bool_t pressed)
 {
     if (scancode == KEY_LSHIFT || scancode == KEY_RSHIFT)
@@ -167,12 +118,6 @@ static void update_keyboard_state(uint8_t scancode, bool_t pressed)
     }
 }
 
-/*
-** ==========================================================================
-** Add Key to Circular Buffer
-** ==========================================================================
-*/
-
 static void buffer_add_key(t_key_event event)
 {
     if (g_buffer_count >= KEYBOARD_BUFFER_SIZE)
@@ -184,12 +129,6 @@ static void buffer_add_key(t_key_event event)
     g_buffer_write = (g_buffer_write + 1) % KEYBOARD_BUFFER_SIZE;
     g_buffer_count++;
 }
-
-/*
-** ==========================================================================
-** Keyboard Interrupt Handler (called from IRQ1)
-** ==========================================================================
-*/
 
 void keyboard_handler(void)
 {
@@ -204,13 +143,13 @@ void keyboard_handler(void)
     if (!pressed)
     {
         scancode = (uint8_t)(scancode & ~KEY_RELEASED_OFFSET);
-        g_last_scancode = 0;  /* Reset on key release */
+        g_last_scancode = 0;
         g_debounce_counter = 0;
     }
 
     update_keyboard_state(scancode, pressed);
 
-    /* Simple debouncing: ignore duplicate key press within threshold */
+
     is_duplicate = (bool_t)(pressed && scancode == g_last_scancode &&
                             g_debounce_counter < 5);
 
@@ -235,22 +174,10 @@ void keyboard_handler(void)
     pic_send_eoi(1);
 }
 
-/*
-** ==========================================================================
-** Check if Key is Available
-** ==========================================================================
-*/
-
 bool_t keyboard_has_key(void)
 {
     return ((bool_t)(g_buffer_count > 0));
 }
-
-/*
-** ==========================================================================
-** Get Key Event from Buffer
-** ==========================================================================
-*/
 
 t_key_event keyboard_get_key(void)
 {
@@ -271,12 +198,6 @@ t_key_event keyboard_get_key(void)
     return (event);
 }
 
-/*
-** ==========================================================================
-** Blocking Get Character (waits for printable key)
-** ==========================================================================
-*/
-
 char keyboard_getchar(void)
 {
     t_key_event event;
@@ -296,12 +217,6 @@ char keyboard_getchar(void)
         }
     }
 }
-
-/*
-** ==========================================================================
-** Check if Alt Key is Pressed
-** ==========================================================================
-*/
 
 bool_t keyboard_alt_pressed(void)
 {

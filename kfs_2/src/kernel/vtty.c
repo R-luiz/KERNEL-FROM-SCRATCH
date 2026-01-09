@@ -1,56 +1,19 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*   KFS_1 - Kernel From Scratch                                              */
-/*                                                                            */
-/*   vtty.c - Virtual Terminal (TTY) Implementation with Scrollback           */
-/*                                                                            */
-/*   NASA/JPL C Coding Standards Compliant:                                   */
-/*   - No recursion                                                           */
-/*   - All loops bounded                                                      */
-/*   - Functions <= 60 lines                                                  */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "../include/vtty.h"
 #include "../lib/string.h"
-
-/*
-** ==========================================================================
-** Global Terminal State
-** ==========================================================================
-*/
 
 static t_vtty           g_terminals[VTTY_COUNT];
 static uint8_t          g_current_terminal;
 static volatile uint16_t *g_vga_buffer = (volatile uint16_t *)VGA_MEMORY_ADDRESS;
-
-/*
-** ==========================================================================
-** Helper: Create VGA Entry
-** ==========================================================================
-*/
 
 static inline uint16_t vga_entry(char c, uint8_t color)
 {
     return ((uint16_t)c | ((uint16_t)color << 8));
 }
 
-/*
-** ==========================================================================
-** Helper: Calculate Buffer Index
-** ==========================================================================
-*/
-
 static inline size_t buffer_index(size_t x, size_t y)
 {
     return (y * VGA_WIDTH + x);
 }
-
-/*
-** ==========================================================================
-** Refresh Display from Scrollback Buffer
-** ==========================================================================
-*/
 
 static void vtty_refresh_display(void)
 {
@@ -62,7 +25,7 @@ static void vtty_refresh_display(void)
 
     term = &g_terminals[g_current_terminal];
 
-    /* Calculate the starting line in the buffer to display */
+
     if (term->cursor_row < VGA_HEIGHT)
     {
         display_start = 0;
@@ -72,7 +35,7 @@ static void vtty_refresh_display(void)
         display_start = term->cursor_row - VGA_HEIGHT + 1;
     }
 
-    /* Apply scroll offset (scrolling up means showing earlier lines) */
+
     if (display_start >= term->scroll_offset)
     {
         display_start = display_start - term->scroll_offset;
@@ -82,7 +45,7 @@ static void vtty_refresh_display(void)
         display_start = 0;
     }
 
-    /* Copy visible portion to VGA buffer */
+
     dst_idx = 0;
     i = 0;
     while (i < VGA_HEIGHT)
@@ -94,7 +57,7 @@ static void vtty_refresh_display(void)
         i++;
     }
 
-    /* Update cursor position (only if not scrolled back) */
+
     if (term->scroll_offset == 0)
     {
         size_t visible_row;
@@ -110,16 +73,10 @@ static void vtty_refresh_display(void)
     }
     else
     {
-        /* Hide cursor when scrolled back */
+
         vga_set_cursor(VGA_WIDTH, VGA_HEIGHT);
     }
 }
-
-/*
-** ==========================================================================
-** Initialize Virtual Terminals
-** ==========================================================================
-*/
 
 void vtty_init(void)
 {
@@ -153,12 +110,6 @@ void vtty_init(void)
     vtty_refresh_display();
 }
 
-/*
-** ==========================================================================
-** Switch to Different Terminal
-** ==========================================================================
-*/
-
 void vtty_switch(uint8_t terminal)
 {
     if (terminal >= VTTY_COUNT || terminal == g_current_terminal)
@@ -170,22 +121,10 @@ void vtty_switch(uint8_t terminal)
     vtty_refresh_display();
 }
 
-/*
-** ==========================================================================
-** Get Current Terminal Number
-** ==========================================================================
-*/
-
 uint8_t vtty_get_current(void)
 {
     return (g_current_terminal);
 }
-
-/*
-** ==========================================================================
-** Scroll Buffer Content Up (new line at bottom)
-** ==========================================================================
-*/
 
 static void vtty_scroll_content(void)
 {
@@ -196,13 +135,13 @@ static void vtty_scroll_content(void)
 
     term = &g_terminals[g_current_terminal];
 
-    /* If we haven't filled the buffer yet, just increment cursor_row */
+
     if (term->cursor_row < VTTY_SCROLLBACK_LINES - 1)
     {
         return;
     }
 
-    /* Shift all lines up by one */
+
     blank = vga_entry(' ', term->color);
 
     i = 0;
@@ -212,7 +151,7 @@ static void vtty_scroll_content(void)
         i++;
     }
 
-    /* Clear the last line */
+
     last_row_start = (VTTY_SCROLLBACK_LINES - 1) * VGA_WIDTH;
     i = 0;
     while (i < VGA_WIDTH)
@@ -221,15 +160,9 @@ static void vtty_scroll_content(void)
         i++;
     }
 
-    /* Keep cursor at the last line */
+
     term->cursor_row = VTTY_SCROLLBACK_LINES - 1;
 }
-
-/*
-** ==========================================================================
-** Put Character to Current Terminal
-** ==========================================================================
-*/
 
 void vtty_putchar(char c)
 {
@@ -238,7 +171,7 @@ void vtty_putchar(char c)
 
     term = &g_terminals[g_current_terminal];
 
-    /* Reset scroll offset when typing */
+
     term->scroll_offset = 0;
 
     if (c == '\n')
@@ -292,12 +225,6 @@ void vtty_putchar(char c)
     vtty_refresh_display();
 }
 
-/*
-** ==========================================================================
-** Put String to Current Terminal
-** ==========================================================================
-*/
-
 void vtty_putstr(const char *str)
 {
     size_t i;
@@ -315,22 +242,10 @@ void vtty_putstr(const char *str)
     }
 }
 
-/*
-** ==========================================================================
-** Set Terminal Color
-** ==========================================================================
-*/
-
 void vtty_set_color(uint8_t color)
 {
     g_terminals[g_current_terminal].color = color;
 }
-
-/*
-** ==========================================================================
-** Clear Current Terminal
-** ==========================================================================
-*/
 
 void vtty_clear(void)
 {
@@ -356,12 +271,6 @@ void vtty_clear(void)
     vtty_refresh_display();
 }
 
-/*
-** ==========================================================================
-** Scroll View Up (see older content)
-** ==========================================================================
-*/
-
 void vtty_scroll_up(size_t lines)
 {
     t_vtty  *term;
@@ -369,7 +278,7 @@ void vtty_scroll_up(size_t lines)
 
     term = &g_terminals[g_current_terminal];
 
-    /* Calculate maximum scroll offset */
+
     if (term->cursor_row >= VGA_HEIGHT)
     {
         max_offset = term->cursor_row - VGA_HEIGHT + 1;
@@ -387,12 +296,6 @@ void vtty_scroll_up(size_t lines)
 
     vtty_refresh_display();
 }
-
-/*
-** ==========================================================================
-** Scroll View Down (see newer content)
-** ==========================================================================
-*/
 
 void vtty_scroll_down(size_t lines)
 {
