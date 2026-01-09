@@ -254,9 +254,9 @@ void    shell_run(void)
             /* Only process key press events */
             if (event.pressed)
             {
-                /* Handle Alt+F1-F4 for terminal switching */
+                /* Handle Alt+F1-F8 for terminal switching */
                 if (keyboard_alt_pressed() &&
-                    event.scancode >= KEY_F1 && event.scancode <= KEY_F4)
+                    event.scancode >= KEY_F1 && event.scancode <= KEY_F8)
                 {
                     vtty_switch((uint8_t)(event.scancode - KEY_F1));
                 }

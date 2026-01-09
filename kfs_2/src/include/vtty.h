@@ -20,7 +20,7 @@
 ** ==========================================================================
 */
 
-#define VTTY_COUNT              4
+#define VTTY_COUNT              8
 #define VTTY_SCROLLBACK_LINES   200     /* Total lines in scrollback buffer */
 #define VTTY_BUFFER_SIZE        (VGA_WIDTH * VTTY_SCROLLBACK_LINES)
 #define VTTY_VISIBLE_SIZE       (VGA_WIDTH * VGA_HEIGHT)
