@@ -1,28 +1,5 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*   KFS_1 - Kernel From Scratch                                              */
-/*                                                                            */
-/*   string.c - Basic String Functions Implementation                         */
-/*                                                                            */
-/*   NASA/JPL C Coding Standards Compliant:                                   */
-/*   - All loops bounded                                                      */
-/*   - No recursion                                                           */
-/*   - Functions <= 60 lines                                                  */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "string.h"
 
-/*
-** ==========================================================================
-** Memory Functions
-** ==========================================================================
-*/
-
-/*
-** Fill memory with a constant byte
-** NASA Rule #2: Loop bounded by parameter n
-*/
 void *k_memset(void *dest, int c, size_t n)
 {
     uint8_t *ptr;
@@ -42,10 +19,6 @@ void *k_memset(void *dest, int c, size_t n)
     return (dest);
 }
 
-/*
-** Copy memory area (non-overlapping)
-** NASA Rule #2: Loop bounded by parameter n
-*/
 void *k_memcpy(void *dest, const void *src, size_t n)
 {
     uint8_t         *d;
@@ -67,10 +40,6 @@ void *k_memcpy(void *dest, const void *src, size_t n)
     return (dest);
 }
 
-/*
-** Copy memory area (handles overlapping)
-** NASA Rule #2: Loop bounded by parameter n
-*/
 void *k_memmove(void *dest, const void *src, size_t n)
 {
     uint8_t         *d;
@@ -104,11 +73,6 @@ void *k_memmove(void *dest, const void *src, size_t n)
     return (dest);
 }
 
-/*
-** Compare two memory areas
-** NASA Rule #2: Loop bounded by parameter n
-** Returns: 0 if equal, <0 if s1<s2, >0 if s1>s2
-*/
 int k_memcmp(const void *s1, const void *s2, size_t n)
 {
     const uint8_t   *p1;
@@ -133,16 +97,6 @@ int k_memcmp(const void *s1, const void *s2, size_t n)
     return (0);
 }
 
-/*
-** ==========================================================================
-** String Functions
-** ==========================================================================
-*/
-
-/*
-** Calculate string length
-** NASA Rule #2: Loop bounded by null terminator
-*/
 size_t k_strlen(const char *str)
 {
     size_t len;
@@ -159,10 +113,6 @@ size_t k_strlen(const char *str)
     return (len);
 }
 
-/*
-** Compare two strings
-** Returns: 0 if equal, <0 if s1<s2, >0 if s1>s2
-*/
 int k_strcmp(const char *s1, const char *s2)
 {
     size_t i;
@@ -183,10 +133,6 @@ int k_strcmp(const char *s1, const char *s2)
     return ((uint8_t)s1[i] - (uint8_t)s2[i]);
 }
 
-/*
-** Compare two strings up to n characters
-** NASA Rule #2: Loop bounded by parameter n
-*/
 int k_strncmp(const char *s1, const char *s2, size_t n)
 {
     size_t i;
@@ -211,9 +157,6 @@ int k_strncmp(const char *s1, const char *s2, size_t n)
     return (0);
 }
 
-/*
-** Copy string
-*/
 char *k_strcpy(char *dest, const char *src)
 {
     size_t i;
@@ -232,10 +175,6 @@ char *k_strcpy(char *dest, const char *src)
     return (dest);
 }
 
-/*
-** Copy string up to n characters
-** NASA Rule #2: Loop bounded by parameter n
-*/
 char *k_strncpy(char *dest, const char *src, size_t n)
 {
     size_t i;
@@ -258,17 +197,6 @@ char *k_strncpy(char *dest, const char *src, size_t n)
     return (dest);
 }
 
-/*
-** ==========================================================================
-** Number to String Conversion
-** ==========================================================================
-*/
-
-/*
-** Convert signed integer to string
-** Base: 2 to 16
-** NASA Rule #2: Loop bounded by maximum digits (32 for base 2)
-*/
 void k_itoa(int32_t value, char *buffer, int base)
 {
     static const char   digits[] = "0123456789ABCDEF";
@@ -319,10 +247,6 @@ void k_itoa(int32_t value, char *buffer, int base)
     buffer[j] = '\0';
 }
 
-/*
-** Convert unsigned integer to string
-** NASA Rule #2: Loop bounded by maximum digits (32 for base 2)
-*/
 void k_utoa(uint32_t value, char *buffer, int base)
 {
     static const char   digits[] = "0123456789ABCDEF";
