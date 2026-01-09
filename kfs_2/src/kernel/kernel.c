@@ -104,7 +104,7 @@ static void printk_putnum(uint32_t num, int base, int is_signed, int uppercase)
             i++;
         }
     }
-    vga_putstr(buffer);
+    vtty_putstr(buffer);
 }
 
 void printk(const char *format, ...)
@@ -128,12 +128,12 @@ void printk(const char *format, ...)
             if (c == 's')
             {
                 const char *s = va_arg(args, const char *);
-                vga_putstr(s != NULL ? s : "(null)");
+                vtty_putstr(s != NULL ? s : "(null)");
             }
             else if (c == 'c')
             {
                 char ch = (char)va_arg(args, int);
-                vga_putchar(ch);
+                vtty_putchar(ch);
             }
             else if (c == 'd' || c == 'i')
             {
@@ -158,22 +158,22 @@ void printk(const char *format, ...)
             else if (c == 'p')
             {
                 uint32_t ptr = (uint32_t)va_arg(args, void *);
-                vga_putstr("0x");
+                vtty_putstr("0x");
                 printk_putnum(ptr, 16, 0, 0);
             }
             else if (c == '%')
             {
-                vga_putchar('%');
+                vtty_putchar('%');
             }
             else
             {
-                vga_putchar('%');
-                vga_putchar(c);
+                vtty_putchar('%');
+                vtty_putchar(c);
             }
         }
         else
         {
-            vga_putchar(format[i]);
+            vtty_putchar(format[i]);
         }
         i++;
     }
